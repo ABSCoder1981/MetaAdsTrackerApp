@@ -203,6 +203,11 @@ These don't belong to one sprint — they're tracked continuously across Phase 0
 - **"Estimated" labeling discipline** — every ROI/ROAS surface (dashboards, reports, exports) must carry the label
   and hoverable assumptions panel. Treat this as a shared component (`<EstimatedValue>`), not a per-screen
   reimplementation, to avoid one screen silently dropping the label.
+- **Supabase's shared-SMTP email rate limit (2/hour)** — discovered during Sprint 1 auth testing; blocks anything
+  that triggers auth emails (sign-up confirmations, password resets) beyond a couple of attempts per hour. Fine for
+  now with email confirmation disabled in dev, but real user onboarding (Rollout Stage 1+) needs custom SMTP
+  configured in Supabase Auth settings before launch — track this alongside the WhatsApp approval item above as a
+  pre-launch dependency, not a Sprint 1 blocker.
 
 ---
 
