@@ -1,0 +1,21 @@
+{
+  "name": "Meta Ads Campaign Performance Tracker",
+  "short_name": "Ads Tracker",
+  "description": "Multi-tenant Meta Ads reporting & intelligence platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

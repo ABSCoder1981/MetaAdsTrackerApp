@@ -7,7 +7,7 @@ concrete implementation decisions. This is the reference engineers should build 
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS | PWA-enabled from Sprint 0, not bolted on later |
+| Frontend | Next.js (App Router), latest stable at scaffold time — 16.x, TypeScript, Tailwind CSS | PWA-enabled from Sprint 0, not bolted on later. PRD Section 23 named "Next.js 14" when written; scaffolded with the current stable major instead since this is a greenfield build — no code depends on a specific major. Note Next.js 16 renamed the `middleware` file convention to `proxy`. |
 | Backend | Next.js API routes / server actions (modular monolith) | No microservices at this scale (300+ campaigns, 10–25 users) |
 | Database | Supabase (managed Postgres) | Row-Level Security enforced per `workspace_id` on every table |
 | Auth | Supabase Auth | Workspace-scoped sessions, workspace switcher for multi-workspace users |

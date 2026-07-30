@@ -8,8 +8,9 @@ launch, or pause live ad campaigns.
 
 ## Status
 
-📋 Planning phase — MVP build not yet started. See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the
-full build plan.
+🏗️ Sprint 0 (Foundation) — project scaffold is in place: Next.js app boots, lints, type-checks, and builds clean.
+No Supabase project is provisioned yet and no schema is applied — that's Sprint 1. See
+[`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
 ## Documents
 
@@ -25,12 +26,35 @@ full build plan.
 
 - **Scope at launch:** 1 Business Manager, multiple Ad Accounts, 300+ active campaigns, real estate vertical only.
 - **Architecture:** Multi-tenant (workspace-based) from day one, so it can be white-labelled later.
-- **Stack:** Next.js 14 (App Router) + TypeScript + Tailwind, Supabase (Postgres + Auth + Realtime) with
-  Row-Level Security, hosted on Vercel.
+- **Stack:** Next.js (App Router, latest stable — 16.x at scaffold time) + TypeScript + Tailwind, Supabase
+  (Postgres + Auth + Realtime) with Row-Level Security, hosted on Vercel.
 - **Phasing:** MVP (core tracking, lead analytics, role dashboards, alerts) → Phase 2 (Audience/Creative Analytics,
   AI-assisted scoring, custom report builder) → Phase 3 (multi-BM white-label, billing, other ad platforms).
 
-## Getting started (once build begins)
+## Getting started
 
-Setup instructions will be added here once the project scaffold (Next.js + Supabase) is initialized in
-Sprint 0 — see `docs/ROADMAP.md`.
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+
+The app runs standalone without any environment variables — the auth `proxy.ts` no-ops until Supabase is
+configured. To connect Supabase (needed starting Sprint 1):
+
+```bash
+cp .env.example .env.local
+# fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY from
+# your Supabase project's Settings → API page
+```
+
+Useful scripts:
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Local dev server |
+| `npm run lint` | ESLint |
+| `npx tsc --noEmit` | Type-check |
+| `npm run build` | Production build |
+
+`supabase/migrations/00000000000000_workspace_rls_template.sql` contains the reusable workspace-scoped
+Row-Level Security pattern (Sprint 1 builds the full schema in `docs/DATA_MODEL.md` on top of it).

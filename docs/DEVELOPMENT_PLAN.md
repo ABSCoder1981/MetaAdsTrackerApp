@@ -40,7 +40,7 @@ Nothing in Phase 1 can start meaningfully until this phase's exit criteria are m
 from the schema and sync pipeline built here.
 
 ### Sprint 0 — Scaffold & Infra
-- Initialize Next.js 14 (App Router) + TypeScript + Tailwind project; PWA manifest/service worker stubbed (NFR:
+- Initialize Next.js (App Router, latest stable — 16.x) + TypeScript + Tailwind project; PWA manifest/service worker stubbed (NFR:
   offline support, Section 10).
 - Provision Supabase project; enable Auth, Realtime, Row-Level Security.
 - Set up GitHub Actions → Vercel preview/production pipeline (Section 23).
