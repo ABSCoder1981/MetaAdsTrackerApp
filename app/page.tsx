@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -6,13 +8,19 @@ export default function Home() {
           Meta Ads Campaign Performance Tracker
         </h1>
         <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-          Sprint 0 scaffold. Role-based dashboards, campaign monitoring, and
+          Sprint 1 in progress. Role-based dashboards, campaign monitoring, and
           alerts land starting Sprint 3 — see{" "}
           <code className="rounded bg-zinc-200 px-1.5 py-0.5 text-sm dark:bg-zinc-800">
             docs/ROADMAP.md
           </code>
           .
         </p>
+        <Link
+          href="/login"
+          className="rounded bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+        >
+          Sign in
+        </Link>
       </main>
     </div>
   );
