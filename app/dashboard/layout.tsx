@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getUserWorkspaces } from "@/lib/workspace";
+import { getUserWorkspaces, resolveActiveWorkspaceId } from "@/lib/workspace";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { signOut } from "./actions";
 
@@ -24,10 +24,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const cookieStore = await cookies();
-  const cookieWorkspaceId = cookieStore.get("active_workspace_id")?.value;
-  const currentWorkspaceId =
-    workspaces.find((w) => w.workspace_id === cookieWorkspaceId)?.workspace_id ??
-    workspaces[0].workspace_id;
+  const currentWorkspaceId = (await resolveActiveWorkspaceId(
+    supabase,
+    cookieStore.get("active_workspace_id")?.value
+  ))!;
 
   return (
     <div className="flex min-h-full flex-1 flex-col">

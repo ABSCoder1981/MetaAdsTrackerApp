@@ -1,14 +1,13 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { getUserWorkspaces } from "@/lib/workspace";
+import { getUserWorkspaces, resolveActiveWorkspaceId } from "@/lib/workspace";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const workspaces = await getUserWorkspaces(supabase);
   const cookieStore = await cookies();
-  const cookieWorkspaceId = cookieStore.get("active_workspace_id")?.value;
-  const current =
-    workspaces.find((w) => w.workspace_id === cookieWorkspaceId) ?? workspaces[0];
+  const activeWorkspaceId = await resolveActiveWorkspaceId(supabase, cookieStore.get("active_workspace_id")?.value);
+  const current = workspaces.find((w) => w.workspace_id === activeWorkspaceId);
 
   return (
     <div className="max-w-2xl">

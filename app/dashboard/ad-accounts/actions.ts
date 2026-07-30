@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveActiveWorkspaceId } from "@/lib/workspace";
 
 /**
  * Connects a Business Manager + Ad Account to the current workspace,
@@ -15,12 +16,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * callable from an authenticated user's browser session.
  */
 export async function connectAdAccount(formData: FormData) {
-  const cookieStore = await cookies();
-  const workspaceId = cookieStore.get("active_workspace_id")?.value;
-  if (!workspaceId) {
-    throw new Error("No active workspace selected");
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,16 +24,14 @@ export async function connectAdAccount(formData: FormData) {
     throw new Error("Not signed in");
   }
 
-  // Confirm the caller actually belongs to this workspace (RLS would block
-  // the admin-client writes below from catching this, since admin bypasses
-  // RLS by design — this check is what stands in for it).
-  const { data: membership } = await supabase
-    .from("workspace_member")
-    .select("workspace_id")
-    .eq("workspace_id", workspaceId)
-    .single();
-  if (!membership) {
-    throw new Error("Not a member of this workspace");
+  // resolveActiveWorkspaceId already scopes to workspaces this user belongs
+  // to (via getUserWorkspaces, which is RLS-scoped), so no separate
+  // membership check is needed — an invalid/foreign cookie value is simply
+  // ignored in favor of the user's first real workspace.
+  const cookieStore = await cookies();
+  const workspaceId = await resolveActiveWorkspaceId(supabase, cookieStore.get("active_workspace_id")?.value);
+  if (!workspaceId) {
+    throw new Error("No workspace found for this user");
   }
 
   const metaBmId = String(formData.get("meta_bm_id") ?? "").trim();
@@ -86,6 +79,12 @@ export async function connectAdAccount(formData: FormData) {
   if (adAccErr) {
     throw new Error(`Failed to save Ad Account: ${adAccErr.message}`);
   }
+
+  cookieStore.set("active_workspace_id", workspaceId, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 
   redirect("/dashboard/ad-accounts");
 }

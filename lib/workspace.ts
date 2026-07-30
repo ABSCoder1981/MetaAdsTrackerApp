@@ -34,3 +34,23 @@ export async function getUserWorkspaces(
     };
   });
 }
+
+/**
+ * Resolves which workspace should be "active" for the current request: the
+ * cookie value if it's one the user actually belongs to, otherwise their
+ * first workspace. Centralized so every page/action that needs "the current
+ * workspace" agrees on the fallback — the dashboard layout does this
+ * implicitly on render, but that never persists a cookie, so anything that
+ * *requires* a cookie (like a server action) needs this same fallback
+ * rather than assuming the cookie is always set.
+ */
+export async function resolveActiveWorkspaceId(
+  supabase: SupabaseClient,
+  cookieWorkspaceId: string | undefined
+): Promise<string | null> {
+  const workspaces = await getUserWorkspaces(supabase);
+  if (workspaces.length === 0) return null;
+
+  const matched = workspaces.find((w) => w.workspace_id === cookieWorkspaceId);
+  return matched ? matched.workspace_id : workspaces[0].workspace_id;
+}

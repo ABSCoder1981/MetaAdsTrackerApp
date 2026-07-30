@@ -1,12 +1,13 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { connectAdAccount } from "./actions";
 
 export default async function AdAccountsPage() {
-  const cookieStore = await cookies();
-  const workspaceId = cookieStore.get("active_workspace_id")?.value;
   const supabase = await createClient();
+  const cookieStore = await cookies();
+  const workspaceId = await resolveActiveWorkspaceId(supabase, cookieStore.get("active_workspace_id")?.value);
 
   const { data: adAccounts } = await supabase
     .from("ad_account")
