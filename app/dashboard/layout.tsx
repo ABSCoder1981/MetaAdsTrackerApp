@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUserWorkspaces } from "@/lib/workspace";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
@@ -31,9 +32,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <span className="font-semibold text-black dark:text-zinc-50">Ads Tracker</span>
           <WorkspaceSwitcher workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
+          <Link href="/dashboard/ad-accounts" className="text-sm text-zinc-600 underline dark:text-zinc-400">
+            Ad Accounts
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-zinc-600 dark:text-zinc-400">{user.email}</span>
