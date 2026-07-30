@@ -8,9 +8,11 @@ launch, or pause live ad campaigns.
 
 ## Status
 
-🏗️ Sprint 0 (Foundation) — project scaffold is in place: Next.js app boots, lints, type-checks, and builds clean.
-No Supabase project is provisioned yet and no schema is applied — that's Sprint 1. See
-[`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
+✅ Sprint 0 (Foundation) complete — Next.js app is live on Vercel (https://metaadstracker.vercel.app), connected to
+a provisioned Supabase project, with Row-Level Security verified end-to-end (anon reads return `[]`, anon writes
+are rejected with a policy violation — see `scripts/verify-rls.mjs`). The full application schema (Section 18/19)
+is not applied yet — that's Sprint 1. See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full
+build plan.
 
 ## Documents
 
@@ -57,4 +59,9 @@ Useful scripts:
 | `npm run build` | Production build |
 
 `supabase/migrations/00000000000000_workspace_rls_template.sql` contains the reusable workspace-scoped
-Row-Level Security pattern (Sprint 1 builds the full schema in `docs/DATA_MODEL.md` on top of it).
+Row-Level Security pattern (Sprint 1 builds the full schema in `docs/DATA_MODEL.md` on top of it) — already
+applied to the live Supabase project.
+
+`GET /api/health` reports whether Supabase is configured and reachable (no secrets in the response) — useful for
+uptime checks per the NFR in `docs/ARCHITECTURE.md` §7. `scripts/verify-rls.mjs` is a one-off script that exercises
+RLS against the live project using only the public anon key.
