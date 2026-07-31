@@ -60,6 +60,18 @@ budget, 70% utilization, correctly computed "Behind pace") and the Alerts Centre
 Active→Paused transitions as "Campaign stopped unexpectedly" — the minor-to-major currency conversion and the
 rule engine are both working as intended, not just passing unit tests.
 
+✅ Sprint 6-7 (Dashboards, Epic F) complete — role-aware `/dashboard` landing page dispatches to one of 5 views
+based on the signed-in user's RBAC role: **CEO** (Est. Revenue/ROI, top/bottom 3 properties, manager leaderboard,
+30-day trend, no campaign drill-down), **Management/Director** (property/city/manager leaderboards, spend & leads
+trend, alert panel), **Manager** (scoped to "my campaigns" via a self-service employee link), **Supervisor**
+(tagging completeness %, my executives), **Campaign Executive** (my campaigns only), and **Analyst** (full
+sortable KPI table — a drag-drop pivot builder is explicitly Phase 2, Section 24). Administrator falls back to
+the Director view (no dedicated Admin data-dashboard in Section 11; small teams often hold both roles per
+Section 5.1). A new `workspace_daily_trend` RPC feeds the 30-day trend line without collapsing dates the way the
+Sprint 3 aggregation RPC does. **Manager/Supervisor/Executive scoping needs a real RBAC-vs-org-chart link that
+didn't exist before this sprint** — added a self-service "this is me" flow (`sales_team_employee.user_id`) since
+nothing else in the app created it.
+
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
 ## Documents
@@ -129,6 +141,9 @@ CRM lead webhook (external systems can't hold a session cookie).
 `supabase/migrations/0005_budget_pacing_alerts.sql` adds campaign budget columns (`daily_budget`,
 `lifetime_budget`, `budget_remaining`, `effective_status`), `alert.acknowledged_at`/`acknowledged_by`, and
 `workspace.alert_thresholds` (per-workspace configurable alert thresholds, Section 9.11).
+
+`supabase/migrations/0006_dashboard_trend.sql` adds `workspace_daily_trend`, the per-day (not per-campaign)
+aggregation RPC behind the dashboards' 30-day spend/leads trend line.
 
 Verification scripts:
 
