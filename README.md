@@ -55,6 +55,11 @@ Analytics computation), and Pixel inactive (needs pixel event ingestion, not bui
 whenever those channels are actually wired up (Sprint 9-ish), same posture as the WhatsApp/SMTP dependencies
 already tracked.
 
+**Confirmed against real production data:** after a fresh sync, Budget & Pacing showed sane figures (₹1,500 daily
+budget, 70% utilization, correctly computed "Behind pace") and the Alerts Centre correctly caught two real
+Active→Paused transitions as "Campaign stopped unexpectedly" — the minor-to-major currency conversion and the
+rule engine are both working as intended, not just passing unit tests.
+
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
 ## Documents
