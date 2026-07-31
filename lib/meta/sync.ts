@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchCampaigns, fetchInsights, extractLeadCount, MetaApiError } from "./client";
+import { evaluateAndCreateAlerts } from "@/lib/alerts/evaluate";
 
 type AdAccountRow = {
   id: string;
@@ -58,6 +59,21 @@ export async function syncAdAccount(
 
     const metaCampaigns = await fetchCampaigns(adAccount.meta_ad_account_id, token);
 
+    // Capture pre-sync status so the alert engine can detect an
+    // Active→Paused transition (Section 17 "Campaign stopped unexpectedly")
+    // — this would be indistinguishable from a normal paused campaign once
+    // the upsert below overwrites it.
+    const { data: preSyncCampaignRows } = await admin
+      .from("campaign")
+      .select("meta_campaign_id, status")
+      .eq("ad_account_id", adAccount.id);
+    const previousStatusByMetaId = new Map((preSyncCampaignRows ?? []).map((r) => [r.meta_campaign_id, r.status]));
+
+    // Meta returns budget fields in the account's currency's minor unit
+    // (e.g. paise/cents) — divide by 100. See the caveat on MetaCampaign in
+    // lib/meta/client.ts; not yet visually reconciled against Ads Manager.
+    const minorToMajor = (v?: string) => (v != null ? parseFloat(v) / 100 : null);
+
     for (const c of metaCampaigns) {
       await admin
         .from("campaign")
@@ -69,7 +85,12 @@ export async function syncAdAccount(
             name: c.name,
             objective: c.objective ?? null,
             status: c.status ?? null,
+            effective_status: c.effective_status ?? null,
             buying_type: c.buying_type ?? null,
+            daily_budget: minorToMajor(c.daily_budget),
+            lifetime_budget: minorToMajor(c.lifetime_budget),
+            budget_remaining: minorToMajor(c.budget_remaining),
+            budget_synced_at: new Date().toISOString(),
           },
           { onConflict: "workspace_id,meta_campaign_id" }
         );
@@ -77,7 +98,7 @@ export async function syncAdAccount(
 
     const { data: campaignRows } = await admin
       .from("campaign")
-      .select("id, meta_campaign_id")
+      .select("id, meta_campaign_id, status, effective_status, daily_budget, lifetime_budget, budget_remaining")
       .eq("ad_account_id", adAccount.id);
     const campaignIdByMetaId = new Map((campaignRows ?? []).map((r) => [r.meta_campaign_id, r.id]));
 
@@ -114,6 +135,44 @@ export async function syncAdAccount(
       metricsRowsSynced++;
     }
 
+    // Alert evaluation (Section 17): fetch the last 8 days in one batched
+    // query across every campaign on this ad account, rather than one query
+    // per campaign — the difference between ~2 queries and ~1,800 for a
+    // 900-campaign account.
+    const historySince = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const { data: historyRows } = await admin
+      .from("daily_metrics")
+      .select("campaign_id, date, spend, leads, ctr, cpl, frequency")
+      .eq("workspace_id", adAccount.workspace_id)
+      .in("campaign_id", [...campaignIdByMetaId.values()])
+      .gte("date", historySince);
+
+    const historyByCampaign = new Map<string, { date: string; spend: number; leads: number; ctr: number | null; cpl: number | null; frequency: number | null }[]>();
+    for (const row of historyRows ?? []) {
+      const list = historyByCampaign.get(row.campaign_id) ?? [];
+      list.push({
+        date: row.date,
+        spend: Number(row.spend),
+        leads: Number(row.leads),
+        ctr: row.ctr != null ? Number(row.ctr) : null,
+        cpl: row.cpl != null ? Number(row.cpl) : null,
+        frequency: row.frequency != null ? Number(row.frequency) : null,
+      });
+      historyByCampaign.set(row.campaign_id, list);
+    }
+
+    const campaignsForAlerts = (campaignRows ?? []).map((r) => ({
+      id: r.id,
+      status: r.status,
+      effectiveStatus: r.effective_status,
+      dailyBudget: r.daily_budget != null ? Number(r.daily_budget) : null,
+      lifetimeBudget: r.lifetime_budget != null ? Number(r.lifetime_budget) : null,
+      budgetRemaining: r.budget_remaining != null ? Number(r.budget_remaining) : null,
+      previousStatus: previousStatusByMetaId.get(r.meta_campaign_id) ?? null,
+    }));
+
+    await evaluateAndCreateAlerts(admin, adAccount.workspace_id, adAccount.id, campaignsForAlerts, historyByCampaign);
+
     await admin
       .from("ad_account")
       .update({ last_synced_at: new Date().toISOString(), last_sync_status: "success", last_sync_error: null })
@@ -144,6 +203,27 @@ export async function syncAdAccount(
       .from("ad_account")
       .update({ last_sync_status: "error", last_sync_error: message })
       .eq("id", adAccount.id);
+
+    // Section 17 "Sync/API failure" alert (Admin-only in the PRD's channel
+    // table — no channel differentiation yet since delivery is in-app only,
+    // Sprint 9 handles per-role routing). Deduped like the campaign rules.
+    const { data: existingSyncFailureAlert } = await admin
+      .from("alert")
+      .select("id")
+      .eq("workspace_id", adAccount.workspace_id)
+      .eq("ad_account_id", adAccount.id)
+      .eq("rule_key", "sync_failure")
+      .in("status", ["open", "acknowledged"])
+      .maybeSingle();
+
+    if (!existingSyncFailureAlert) {
+      await admin.from("alert").insert({
+        workspace_id: adAccount.workspace_id,
+        ad_account_id: adAccount.id,
+        rule_key: "sync_failure",
+        severity: "red",
+      });
+    }
 
     if (logRow) {
       await admin

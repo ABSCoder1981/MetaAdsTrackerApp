@@ -99,12 +99,29 @@ export type MetaCampaign = {
   objective?: string;
   status?: string;
   buying_type?: string;
+  // Budget fields (Section 9.8) — Meta returns these as strings in the ad
+  // account's currency's MINOR unit (e.g. paise for INR, cents for USD),
+  // unlike Insights' `spend`, which is already in major units. Divided by
+  // 100 in lib/meta/sync.ts. Flagged for reconciliation against Ads
+  // Manager the same way Sprint 2's spend/impressions numbers were —
+  // this hasn't been visually confirmed against a live account yet.
+  daily_budget?: string;
+  lifetime_budget?: string;
+  budget_remaining?: string;
+  // Runtime status distinct from `status` (the configured status) — this is
+  // where rejection/review states like DISAPPROVED, PENDING_REVIEW,
+  // WITH_ISSUES show up (Section 17 "Campaign rejected" alert).
+  effective_status?: string;
 };
 
 export async function fetchCampaigns(adAccountId: string, accessToken: string): Promise<MetaCampaign[]> {
   const data = await fetchAllPages(
     `/${adAccountId}/campaigns`,
-    { fields: "id,name,objective,status,buying_type", limit: "200" },
+    {
+      fields:
+        "id,name,objective,status,effective_status,buying_type,daily_budget,lifetime_budget,budget_remaining",
+      limit: "200",
+    },
     accessToken
   );
   return data as unknown as MetaCampaign[];

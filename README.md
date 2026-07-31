@@ -42,6 +42,19 @@ path per Section 5.1. Meta's native Lead Ads individual-record retrieval needs t
 permission (Meta App Review) — documented as an external dependency rather than built speculatively; aggregate
 lead counts (already reliable) cover the volume/CPL asks in the meantime.
 
+✅ Sprint 5 (Budget Tracking & Pacing, Epic D + Alerts & Notifications, Epic E) complete — Campaign Detail now
+shows lifetime/daily budget, utilization %, linear days-to-exhaustion forecast, and a pacing badge (ahead/on
+track/behind, from recent spend velocity). An alert rule engine evaluates 8 of the 12 PRD Section 17 rules on
+every sync (CTR below threshold, CPL increase, budget exhausted, campaign stopped unexpectedly, frequency high,
+spend anomaly, lead volume dropped, campaign rejected, plus sync/API failure) with per-workspace configurable
+thresholds, and an Alerts Centre (`/dashboard/alerts`) supports Acknowledge/Resolve/Escalate. **Deliberately not
+built:** Learning Limited (needs daily ad-set-level sync, not just the on-demand detail-view fetch — meaningful
+added API load), Estimated ROAS dropped WoW (needs a stored daily ROI history, not just the live Property
+Analytics computation), and Pixel inactive (needs pixel event ingestion, not built at all yet) — see
+`lib/alerts/rules.ts`'s file-level note. Alert delivery is in-app only; Email/WhatsApp dispatch is deferred to
+whenever those channels are actually wired up (Sprint 9-ish), same posture as the WhatsApp/SMTP dependencies
+already tracked.
+
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
 ## Documents
@@ -107,6 +120,10 @@ behind Campaign Monitoring, Property Analytics, and Lead Analytics.
 
 `supabase/migrations/0004_lead_webhook.sql` adds `workspace.webhook_secret`, used to authenticate the landing-page/
 CRM lead webhook (external systems can't hold a session cookie).
+
+`supabase/migrations/0005_budget_pacing_alerts.sql` adds campaign budget columns (`daily_budget`,
+`lifetime_budget`, `budget_remaining`, `effective_status`), `alert.acknowledged_at`/`acknowledged_by`, and
+`workspace.alert_thresholds` (per-workspace configurable alert thresholds, Section 9.11).
 
 Verification scripts:
 
