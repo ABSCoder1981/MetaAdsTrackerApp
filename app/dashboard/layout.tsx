@@ -35,6 +35,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="flex items-center gap-4">
           <span className="font-semibold text-black dark:text-zinc-50">Ads Tracker</span>
           <WorkspaceSwitcher workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
+          <Link href="/dashboard/campaigns" className="text-sm text-zinc-600 underline dark:text-zinc-400">
+            Campaigns
+          </Link>
           <Link href="/dashboard/ad-accounts" className="text-sm text-zinc-600 underline dark:text-zinc-400">
             Ad Accounts
           </Link>

@@ -110,6 +110,32 @@ export async function fetchCampaigns(adAccountId: string, accessToken: string): 
   return data as unknown as MetaCampaign[];
 }
 
+export type MetaAdSet = { id: string; name: string; status?: string };
+
+/** Live drill-down for the Campaign Detail view (Section 9.3) — fetched
+ * on-demand for one campaign, not stored, unlike the daily sync. */
+export async function fetchAdSetsForCampaign(metaCampaignId: string, accessToken: string): Promise<MetaAdSet[]> {
+  const data = await fetchAllPages(`/${metaCampaignId}/adsets`, { fields: "id,name,status", limit: "100" }, accessToken);
+  return data as unknown as MetaAdSet[];
+}
+
+export type MetaAd = {
+  id: string;
+  name: string;
+  status?: string;
+  adset_id?: string;
+  creative?: { thumbnail_url?: string; title?: string; body?: string };
+};
+
+export async function fetchAdsForCampaign(metaCampaignId: string, accessToken: string): Promise<MetaAd[]> {
+  const data = await fetchAllPages(
+    `/${metaCampaignId}/ads`,
+    { fields: "id,name,status,adset_id,creative{thumbnail_url,title,body}", limit: "100" },
+    accessToken
+  );
+  return data as unknown as MetaAd[];
+}
+
 export type MetaInsightRow = {
   campaign_id: string;
   date_start: string;
