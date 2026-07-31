@@ -13,9 +13,6 @@ export type CampaignForDashboard = {
   propertyId: string | null;
   propertyName: string | null;
   city: string | null;
-  managerId: string | null;
-  managerName: string | null;
-  executiveId: string | null;
 };
 
 export type DashboardData = {
@@ -25,7 +22,6 @@ export type DashboardData = {
   metricsLast30: Map<string, { totalSpend: number; totalImpressions: number; totalLeads: number }>;
   trend: WorkspaceTrendPoint[];
   alerts: AlertPanelRow[];
-  employees: { id: string; name: string; role: string; reportsTo: string | null; userId: string | null }[];
   properties: { id: string; name: string; assumedConversionRate: number | null; assumedAvgDealValue: number | null }[];
 };
 
@@ -60,14 +56,11 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
     { data: last30Rows },
     { data: trendRows },
     { data: alertRows },
-    { data: employeeRows },
     { data: propertyRows },
   ] = await Promise.all([
     supabase
       .from("campaign")
-      .select(
-        "id, status, ad_account(name), property_id, property(name, city), manager_id, sales_team_employee!campaign_manager_id_fkey(name), executive_id"
-      )
+      .select("id, status, ad_account(name), property_id, property(name, city)")
       .eq("workspace_id", workspaceId),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: today, p_until: today }),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: yesterday, p_until: yesterday }),
@@ -80,7 +73,6 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
       .in("status", ["open", "acknowledged"])
       .order("triggered_at", { ascending: false })
       .limit(20),
-    supabase.from("sales_team_employee").select("id, name, role, reports_to, user_id").eq("workspace_id", workspaceId),
     supabase
       .from("property")
       .select("id, name, assumed_conversion_rate, assumed_avg_deal_value")
@@ -90,7 +82,6 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
   const campaigns: CampaignForDashboard[] = (campaignRows ?? []).map((c: Record<string, unknown>) => {
     const adAccount = Array.isArray(c.ad_account) ? c.ad_account[0] : c.ad_account;
     const property = Array.isArray(c.property) ? c.property[0] : c.property;
-    const manager = Array.isArray(c.sales_team_employee) ? c.sales_team_employee[0] : c.sales_team_employee;
     return {
       id: c.id as string,
       status: c.status as string | null,
@@ -98,9 +89,6 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
       propertyId: c.property_id as string | null,
       propertyName: (property as { name?: string } | null)?.name ?? null,
       city: (property as { city?: string } | null)?.city ?? null,
-      managerId: c.manager_id as string | null,
-      managerName: (manager as { name?: string } | null)?.name ?? null,
-      executiveId: c.executive_id as string | null,
     };
   });
 
@@ -127,13 +115,6 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
       leads: Number(r.total_leads ?? 0),
     })),
     alerts,
-    employees: (employeeRows ?? []).map((e) => ({
-      id: e.id,
-      name: e.name,
-      role: e.role,
-      reportsTo: e.reports_to,
-      userId: e.user_id,
-    })),
     properties: (propertyRows ?? []).map((p) => ({
       id: p.id,
       name: p.name,
@@ -203,12 +184,4 @@ export function cityLeaderboard(data: DashboardData): LeaderboardRow[] {
     data.campaigns.map((c) => ({ id: c.id, key: c.city ?? "Unknown" })),
     data.metricsLast30
   ).map((r) => ({ key: r.key, name: r.key, spend: r.spend, leads: r.leads, cpl: r.cpl }));
-}
-
-export function managerLeaderboard(data: DashboardData): LeaderboardRow[] {
-  const managerNameById = new Map(data.campaigns.filter((c) => c.managerId).map((c) => [c.managerId!, c.managerName!]));
-  return rollupByKey(
-    data.campaigns.filter((c) => c.managerId).map((c) => ({ id: c.id, key: c.managerId! })),
-    data.metricsLast30
-  ).map((r) => ({ key: r.key, name: managerNameById.get(r.key) ?? "Unknown", spend: r.spend, leads: r.leads, cpl: r.cpl }));
 }

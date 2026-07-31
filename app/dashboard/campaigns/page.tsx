@@ -5,7 +5,7 @@ import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { computeHealthStatus } from "@/lib/campaigns/health";
 import { resolveDateRange, RANGE_OPTIONS } from "@/lib/campaigns/dateRange";
 import { CampaignTable, type CampaignRow } from "@/components/CampaignTable";
-import { createProperty, createSalesTeamEmployee, autoTagFromNaming } from "./actions";
+import { createProperty, autoTagFromNaming } from "./actions";
 
 const PAGE_SIZE = 50;
 
@@ -28,24 +28,22 @@ export default async function CampaignsPage({
   // zero-activity campaigns always landed on page 1 regardless of date range.
   let query = supabase
     .from("campaign")
-    .select("id, name, status, objective, ad_account(name), property(name), sales_team_employee!campaign_manager_id_fkey(name)")
+    .select("id, name, status, objective, ad_account(name), property(name)")
     .eq("workspace_id", workspaceId ?? "");
 
   if (params.q) query = query.ilike("name", `%${params.q}%`);
   if (params.status) query = query.eq("status", params.status);
 
-  const [{ data: campaigns }, { data: metrics }, { data: properties }, { data: employees }, { count: taggedCount }] =
-    await Promise.all([
-      query,
-      supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: since, p_until: until }),
-      supabase.from("property").select("id, name").eq("workspace_id", workspaceId ?? ""),
-      supabase.from("sales_team_employee").select("id, name").eq("workspace_id", workspaceId ?? ""),
-      supabase
-        .from("campaign")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", workspaceId ?? "")
-        .not("property_id", "is", null),
-    ]);
+  const [{ data: campaigns }, { data: metrics }, { data: properties }, { count: taggedCount }] = await Promise.all([
+    query,
+    supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: since, p_until: until }),
+    supabase.from("property").select("id, name").eq("workspace_id", workspaceId ?? ""),
+    supabase
+      .from("campaign")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId ?? "")
+      .not("property_id", "is", null),
+  ]);
 
   const { count: totalCampaignCount } = await supabase
     .from("campaign")
@@ -65,7 +63,6 @@ export default async function CampaignsPage({
 
     const adAccount = Array.isArray(c.ad_account) ? c.ad_account[0] : c.ad_account;
     const property = Array.isArray(c.property) ? c.property[0] : c.property;
-    const manager = Array.isArray(c.sales_team_employee) ? c.sales_team_employee[0] : c.sales_team_employee;
 
     return {
       id: c.id as string,
@@ -74,7 +71,6 @@ export default async function CampaignsPage({
       objective: c.objective as string | null,
       adAccountName: (adAccount as { name?: string } | null)?.name ?? "—",
       propertyName: (property as { name?: string } | null)?.name ?? null,
-      managerName: (manager as { name?: string } | null)?.name ?? null,
       spend,
       impressions,
       leads,
@@ -143,7 +139,7 @@ export default async function CampaignsPage({
         <p className="mb-4 text-sm text-zinc-500">No campaigns match this search/filter.</p>
       )}
 
-      <CampaignTable rows={rows} properties={properties ?? []} managers={employees ?? []} />
+      <CampaignTable rows={rows} properties={properties ?? []} />
 
       <div className="mt-4 flex items-center justify-between text-sm">
         <span className="text-zinc-600 dark:text-zinc-400">
@@ -170,29 +166,14 @@ export default async function CampaignsPage({
       </div>
 
       <details className="mt-8 rounded border border-zinc-200 p-4 dark:border-zinc-800">
-        <summary className="cursor-pointer text-sm font-medium">Add Property / Manager manually</summary>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <form action={createProperty} className="space-y-2">
-            <p className="text-sm font-medium">New Property</p>
-            <input name="name" required placeholder="Property name" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
-            <input name="city" placeholder="City (optional)" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
-            <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black">
-              Add Property
-            </button>
-          </form>
-          <form action={createSalesTeamEmployee} className="space-y-2">
-            <p className="text-sm font-medium">New Team Member</p>
-            <input name="name" required placeholder="Name" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
-            <select name="role" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900">
-              <option value="Manager">Manager</option>
-              <option value="Supervisor">Supervisor</option>
-              <option value="Executive">Executive</option>
-            </select>
-            <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black">
-              Add Team Member
-            </button>
-          </form>
-        </div>
+        <summary className="cursor-pointer text-sm font-medium">Add Property manually</summary>
+        <form action={createProperty} className="mt-3 max-w-sm space-y-2">
+          <input name="name" required placeholder="Property name" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
+          <input name="city" placeholder="City (optional)" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
+          <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black">
+            Add Property
+          </button>
+        </form>
       </details>
     </div>
   );

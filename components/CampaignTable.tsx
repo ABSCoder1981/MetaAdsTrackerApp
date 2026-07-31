@@ -12,7 +12,6 @@ export type CampaignRow = {
   objective: string | null;
   adAccountName: string;
   propertyName: string | null;
-  managerName: string | null;
   spend: number;
   impressions: number;
   leads: number;
@@ -22,15 +21,7 @@ export type CampaignRow = {
 
 type Option = { id: string; name: string };
 
-export function CampaignTable({
-  rows,
-  properties,
-  managers,
-}: {
-  rows: CampaignRow[];
-  properties: Option[];
-  managers: Option[];
-}) {
+export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; properties: Option[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
@@ -73,14 +64,6 @@ export function CampaignTable({
               </option>
             ))}
           </select>
-          <select name="manager_id" className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900" defaultValue="">
-            <option value="">Manager…</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
           <button
             type="submit"
             disabled={isPending}
@@ -92,7 +75,7 @@ export function CampaignTable({
       )}
 
       <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[900px] text-left text-sm">
+        <table className="w-full min-w-[800px] text-left text-sm">
           <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-3 py-2">
@@ -112,7 +95,6 @@ export function CampaignTable({
               <th className="px-3 py-2 text-right">Leads</th>
               <th className="px-3 py-2 text-right">CPL</th>
               <th className="px-3 py-2">Property</th>
-              <th className="px-3 py-2">Manager</th>
             </tr>
           </thead>
           <tbody>
@@ -139,7 +121,6 @@ export function CampaignTable({
                 <td className="px-3 py-2 text-right">{r.leads}</td>
                 <td className="px-3 py-2 text-right">{r.cpl ? r.cpl.toFixed(0) : "—"}</td>
                 <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.propertyName ?? "—"}</td>
-                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.managerName ?? "—"}</td>
               </tr>
             ))}
           </tbody>

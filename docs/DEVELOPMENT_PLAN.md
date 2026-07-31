@@ -265,3 +265,33 @@ Every bullet in PRD Section 28 must be traceable to the epic that satisfies it b
 | Admin can invite user/assign role/connect Ad Account without engineering | Epic J |
 | All 12 alert rules fire correctly, can be ack/resolved | Epic E |
 | RLS blocks cross-workspace access via direct API call | Sprint 1, verified in Sprint 10 hardening |
+
+---
+
+## 11. Deviation Log (business-decided divergences from the PRD)
+
+Changes made at the business's explicit request that contradict what the PRD itself specifies — kept here so
+anyone reading the PRD alongside the codebase later understands why they disagree, rather than assuming a bug or
+an incomplete build.
+
+### Manager/Executive tracking removed entirely (Sprint 6-7, post-launch)
+
+**What the PRD specifies:** Manager, Supervisor, and Campaign Executive as three of the seven core personas
+(Sections 7.3–7.5), with their own dashboards (Sections 11.3–11.5), Team & Employee Performance tracking and
+leaderboards (Section 9.10), campaign tagging by manager/executive (Section 9.2), and corresponding RBAC roles
+and permissions (Section 21).
+
+**What was built instead:** none of it. `campaign.manager_id`/`executive_id` columns, the `sales_team_employee`
+table, the three RBAC roles, their three dashboards, the Manager Leaderboard widget, and the "Add Team Member" /
+manager-tagging UI were all built in Sprints 1, 3, and 6-7 — then removed in full once the business clarified
+they don't track campaigns by manager/executive at all. This was confirmed twice explicitly before removal (see
+conversation record) given how much it contradicted the PRD's own stated requirements.
+
+**What remains:** the naming-convention parser (`lib/campaigns/naming.ts`) still structurally identifies a
+manager-like name prefix in campaign names — that's how it locates where the actual Property name starts (the
+convention is `Manager - Property Objective Campaign MonthYear`) — it's just never persisted as a manager tag
+anymore. CEO/Director dashboards, Property/City leaderboards, and CPL/lead reporting are unaffected, since none
+of those depended on the manager/executive concept.
+
+**If this is ever revisited:** the removal migration is `supabase/migrations/0007_remove_manager_executive.sql` —
+reverting means restoring those columns/table/roles and rebuilding the three dashboards, not just flipping a flag.

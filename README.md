@@ -60,17 +60,18 @@ budget, 70% utilization, correctly computed "Behind pace") and the Alerts Centre
 Active→Paused transitions as "Campaign stopped unexpectedly" — the minor-to-major currency conversion and the
 rule engine are both working as intended, not just passing unit tests.
 
-✅ Sprint 6-7 (Dashboards, Epic F) complete — role-aware `/dashboard` landing page dispatches to one of 5 views
-based on the signed-in user's RBAC role: **CEO** (Est. Revenue/ROI, top/bottom 3 properties, manager leaderboard,
-30-day trend, no campaign drill-down), **Management/Director** (property/city/manager leaderboards, spend & leads
-trend, alert panel), **Manager** (scoped to "my campaigns" via a self-service employee link), **Supervisor**
-(tagging completeness %, my executives), **Campaign Executive** (my campaigns only), and **Analyst** (full
+✅ Sprint 6-7 (Dashboards, Epic F) complete — role-aware `/dashboard` landing page dispatches based on the signed-in
+user's RBAC role: **CEO** (Est. Revenue/ROI, top/bottom 3 properties, 30-day trend, no campaign drill-down),
+**Management/Director** (property/city leaderboards, spend & leads trend, alert panel), and **Analyst** (full
 sortable KPI table — a drag-drop pivot builder is explicitly Phase 2, Section 24). Administrator falls back to
 the Director view (no dedicated Admin data-dashboard in Section 11; small teams often hold both roles per
 Section 5.1). A new `workspace_daily_trend` RPC feeds the 30-day trend line without collapsing dates the way the
-Sprint 3 aggregation RPC does. **Manager/Supervisor/Executive scoping needs a real RBAC-vs-org-chart link that
-didn't exist before this sprint** — added a self-service "this is me" flow (`sales_team_employee.user_id`) since
-nothing else in the app created it.
+Sprint 3 aggregation RPC does.
+
+⚠️ **Manager/Executive tracking was removed from the app entirely** shortly after this sprint, at the business's
+explicit request — this deviates from the PRD's Sections 7.3–7.5 (personas), 9.10 (Team Performance), 11.3–11.5
+(their dashboards), and 21 (their RBAC roles). See `docs/DEVELOPMENT_PLAN.md`'s Deviation Log for the full
+rationale; the removal migration is `supabase/migrations/0007_remove_manager_executive.sql`.
 
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
@@ -144,6 +145,10 @@ CRM lead webhook (external systems can't hold a session cookie).
 
 `supabase/migrations/0006_dashboard_trend.sql` adds `workspace_daily_trend`, the per-day (not per-campaign)
 aggregation RPC behind the dashboards' 30-day spend/leads trend line.
+
+`supabase/migrations/0007_remove_manager_executive.sql` drops `campaign.manager_id`/`executive_id`, the
+`sales_team_employee` table, and the Marketing Manager/Supervisor/Campaign Executive RBAC roles — a deliberate
+deviation from the PRD, see `docs/DEVELOPMENT_PLAN.md`'s Deviation Log.
 
 Verification scripts:
 

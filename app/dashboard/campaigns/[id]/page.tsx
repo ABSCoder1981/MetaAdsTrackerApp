@@ -29,7 +29,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   const { data: campaign } = await supabase
     .from("campaign")
     .select(
-      "id, name, status, objective, meta_campaign_id, ad_account_id, daily_budget, lifetime_budget, budget_remaining, ad_account(name, meta_ad_account_id, business_manager_id), property(name), sales_team_employee!campaign_manager_id_fkey(name)"
+      "id, name, status, objective, meta_campaign_id, ad_account_id, daily_budget, lifetime_budget, budget_remaining, ad_account(name, meta_ad_account_id, business_manager_id), property(name)"
     )
     .eq("id", id)
     .single();
@@ -38,7 +38,6 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
   const adAccount = Array.isArray(campaign.ad_account) ? campaign.ad_account[0] : campaign.ad_account;
   const property = Array.isArray(campaign.property) ? campaign.property[0] : campaign.property;
-  const manager = Array.isArray(campaign.sales_team_employee) ? campaign.sales_team_employee[0] : campaign.sales_team_employee;
 
   const since = isoDaysAgo(29);
   const { data: metricsRows } = await supabase
@@ -135,8 +134,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       <h1 className="mb-1 mt-2 text-2xl font-semibold text-black dark:text-zinc-50">{campaign.name}</h1>
       <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
         {(adAccount as { name?: string } | null)?.name ?? "—"} · {campaign.status ?? "—"} · {campaign.objective ?? "—"} ·
-        Property: {(property as { name?: string } | null)?.name ?? "unset"} · Manager:{" "}
-        {(manager as { name?: string } | null)?.name ?? "unset"}
+        Property: {(property as { name?: string } | null)?.name ?? "unset"}
       </p>
 
       <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Trend (last 30 days)</h2>
