@@ -102,6 +102,12 @@ workspace-scoped RLS on every table, and the role/permission model seeded from t
 token storage, `sync_log`, sync status columns on `ad_account`, and the unique constraints idempotent upserts
 need.
 
+`supabase/migrations/0003_campaign_monitoring.sql` adds `campaign_metrics_summary`, the per-range aggregation RPC
+behind Campaign Monitoring, Property Analytics, and Lead Analytics.
+
+`supabase/migrations/0004_lead_webhook.sql` adds `workspace.webhook_secret`, used to authenticate the landing-page/
+CRM lead webhook (external systems can't hold a session cookie).
+
 Verification scripts:
 
 | Script | Checks | Needs |
@@ -110,3 +116,7 @@ Verification scripts:
 | `scripts/verify-sprint1-schema.mjs` | Role/permission seeding, RLS on every core table | anon key only |
 | `scripts/verify-sprint1-e2e.mjs` | Real sign-up → workspace creation → cross-user isolation | anon key, email rate limit headroom |
 | `scripts/verify-sprint2-pilot.mjs` | Pulls synced campaign metrics for manual Ads Manager reconciliation | service_role key |
+| `scripts/verify-sprint4-schema.mjs` | Confirms `workspace.webhook_secret` migrated correctly | service_role key |
+
+Run `npm test` for the unit test suite (vitest) — pure business logic like the naming-convention parser, health
+heuristic, date-range math, and ROI calculations.
