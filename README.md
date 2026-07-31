@@ -26,6 +26,22 @@ in a plain column or env var. **Pending before Rollout Stage 2:**
 - `CRON_SECRET` isn't set in Vercel yet, so the daily scheduled sync (`vercel.json` → `/api/cron/sync`) won't
   authenticate until it is — manual "Sync now" is fully functional in the meantime.
 
+✅ Sprint 3 (Campaign Monitoring & Detail, Epic A) complete and confirmed working against the real 922-campaign
+dataset — sortable/searchable campaign table with health indicators, bulk property/manager tagging,
+naming-convention auto-tagging, and a detail view with 30-day trend charts, DoD/WoW comparison, and a live
+ad set/ad/creative breakdown. First unit test suite added (`vitest`) alongside a real bug fix — default sort now
+ranks by spend instead of name, after a user-reported "every date range looks the same" turned out to be a UX
+default-sort issue, not a filtering bug (root-caused via direct DB query before fixing).
+
+✅ Sprint 4 (Lead Analytics, Epic B + Property Analytics, Epic C) complete — Property leaderboard with
+side-by-side comparison and editable ROI assumptions (assumed conversion rate × avg deal value), a shared
+`<EstimatedValue>` component enforcing the "Estimated" label + assumptions-on-hover everywhere ROI appears
+(Section 28 acceptance criterion), a Lead Analytics page (top campaigns by leads, individual-lead table with
+quality tagging), and the landing-page/CRM webhook (`/api/leads/webhook`) — the second required lead-ingestion
+path per Section 5.1. Meta's native Lead Ads individual-record retrieval needs the restricted `leads_retrieval`
+permission (Meta App Review) — documented as an external dependency rather than built speculatively; aggregate
+lead counts (already reliable) cover the volume/CPL asks in the meantime.
+
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
 ## Documents

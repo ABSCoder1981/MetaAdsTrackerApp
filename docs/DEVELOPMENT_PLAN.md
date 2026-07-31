@@ -215,6 +215,14 @@ These don't belong to one sprint — they're tracked continuously across Phase 0
 - **`CRON_SECRET` not yet set in Vercel** — the daily scheduled sync (`vercel.json` → `/api/cron/sync`) will 401
   until this env var is added; manual "Sync now" via `/dashboard/ad-accounts` is unaffected and fully functional.
   Set before relying on unattended daily syncs.
+- **Meta Lead Ads individual-record retrieval requires the `leads_retrieval` permission** — a restricted
+  permission that needs Meta App Review, in the same category as the WhatsApp Business API approval above.
+  Sprint 4 deliberately did not build speculative integration code for this (would be untestable without the
+  permission). What's shipped instead: aggregate lead counts from Insights (`daily_metrics.leads`, already
+  reliable and validated in Sprint 2/3) cover all of Section 9.4/13.4's volume and CPL asks; the landing-page/CRM
+  webhook (`/api/leads/webhook`) covers the second required ingestion path per Section 5.1. Only
+  individual-record drill-down/quality-tagging for Meta-native lead-form leads specifically is blocked — apply
+  for `leads_retrieval` if that becomes a priority.
 
 ---
 

@@ -38,6 +38,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link href="/dashboard/campaigns" className="text-sm text-zinc-600 underline dark:text-zinc-400">
             Campaigns
           </Link>
+          <Link href="/dashboard/properties" className="text-sm text-zinc-600 underline dark:text-zinc-400">
+            Properties
+          </Link>
+          <Link href="/dashboard/leads" className="text-sm text-zinc-600 underline dark:text-zinc-400">
+            Leads
+          </Link>
           <Link href="/dashboard/ad-accounts" className="text-sm text-zinc-600 underline dark:text-zinc-400">
             Ad Accounts
           </Link>
