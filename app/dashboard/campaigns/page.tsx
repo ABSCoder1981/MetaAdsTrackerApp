@@ -3,41 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { computeHealthStatus } from "@/lib/campaigns/health";
+import { resolveDateRange, RANGE_OPTIONS } from "@/lib/campaigns/dateRange";
 import { CampaignTable, type CampaignRow } from "@/components/CampaignTable";
 import { createProperty, createSalesTeamEmployee, autoTagFromNaming } from "./actions";
-
-const RANGE_OPTIONS = [
-  { key: "today", label: "Today" },
-  { key: "yesterday", label: "Yesterday" },
-  { key: "last7", label: "Last 7 Days" },
-  { key: "last30", label: "Last 30 Days" },
-] as const;
-
-function resolveDateRange(rangeKey: string | undefined): { since: string; until: string; label: string } {
-  const today = new Date();
-  const toISO = (d: Date) => d.toISOString().slice(0, 10);
-
-  switch (rangeKey) {
-    case "today":
-      return { since: toISO(today), until: toISO(today), label: "Today" };
-    case "yesterday": {
-      const y = new Date(today);
-      y.setDate(y.getDate() - 1);
-      return { since: toISO(y), until: toISO(y), label: "Yesterday" };
-    }
-    case "last30": {
-      const since = new Date(today);
-      since.setDate(since.getDate() - 29);
-      return { since: toISO(since), until: toISO(today), label: "Last 30 Days" };
-    }
-    case "last7":
-    default: {
-      const since = new Date(today);
-      since.setDate(since.getDate() - 6);
-      return { since: toISO(since), until: toISO(today), label: "Last 7 Days" };
-    }
-  }
-}
 
 const PAGE_SIZE = 50;
 
@@ -53,22 +21,20 @@ export default async function CampaignsPage({
 
   const { since, until } = resolveDateRange(params.range);
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
 
+  // Fetched unpaginated (922 campaigns is a light payload without daily_metrics
+  // attached) so we can rank by the selected range's spend before paginating —
+  // sorting DB-side by name and only then merging in metrics meant the same
+  // zero-activity campaigns always landed on page 1 regardless of date range.
   let query = supabase
     .from("campaign")
-    .select("id, name, status, objective, ad_account(name), property(name), sales_team_employee!campaign_manager_id_fkey(name)", {
-      count: "exact",
-    })
-    .eq("workspace_id", workspaceId ?? "")
-    .order("name")
-    .range(from, to);
+    .select("id, name, status, objective, ad_account(name), property(name), sales_team_employee!campaign_manager_id_fkey(name)")
+    .eq("workspace_id", workspaceId ?? "");
 
   if (params.q) query = query.ilike("name", `%${params.q}%`);
   if (params.status) query = query.eq("status", params.status);
 
-  const [{ data: campaigns, count }, { data: metrics }, { data: properties }, { data: employees }, { count: taggedCount }] =
+  const [{ data: campaigns }, { data: metrics }, { data: properties }, { data: employees }, { count: taggedCount }] =
     await Promise.all([
       query,
       supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: since, p_until: until }),
@@ -88,7 +54,7 @@ export default async function CampaignsPage({
 
   const metricsByCampaign = new Map((metrics ?? []).map((m: Record<string, unknown>) => [m.campaign_id as string, m]));
 
-  const rows: CampaignRow[] = (campaigns ?? []).map((c: Record<string, unknown>) => {
+  const allRows: CampaignRow[] = (campaigns ?? []).map((c: Record<string, unknown>) => {
     const m = metricsByCampaign.get(c.id as string) as Record<string, unknown> | undefined;
     const spend = Number(m?.total_spend ?? 0);
     const impressions = Number(m?.total_impressions ?? 0);
@@ -117,7 +83,16 @@ export default async function CampaignsPage({
     };
   });
 
-  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
+  // Default sort: highest spend in the selected range first — this is what
+  // makes "which campaign needs attention" (PRD Objective, Section 3)
+  // answerable at a glance, rather than an alphabetical accident.
+  allRows.sort((a, b) => b.spend - a.spend);
+
+  const totalCount = allRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const from = (page - 1) * PAGE_SIZE;
+  const rows = allRows.slice(from, from + PAGE_SIZE);
+
   const completenessPct = totalCampaignCount ? Math.round(((taggedCount ?? 0) / totalCampaignCount) * 100) : 0;
 
   return (
@@ -164,11 +139,15 @@ export default async function CampaignsPage({
         </form>
       </div>
 
+      {totalCount === 0 && (params.q || params.status) && (
+        <p className="mb-4 text-sm text-zinc-500">No campaigns match this search/filter.</p>
+      )}
+
       <CampaignTable rows={rows} properties={properties ?? []} managers={employees ?? []} />
 
       <div className="mt-4 flex items-center justify-between text-sm">
         <span className="text-zinc-600 dark:text-zinc-400">
-          Page {page} of {totalPages} ({count ?? 0} campaigns)
+          Page {page} of {totalPages} ({totalCount} campaigns)
         </span>
         <div className="flex gap-2">
           {page > 1 && (
