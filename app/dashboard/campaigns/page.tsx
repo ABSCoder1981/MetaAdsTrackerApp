@@ -5,7 +5,7 @@ import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { computeHealthStatus } from "@/lib/campaigns/health";
 import { resolveDateRange, RANGE_OPTIONS } from "@/lib/campaigns/dateRange";
 import { CampaignTable, type CampaignRow } from "@/components/CampaignTable";
-import { createProperty, autoTagFromNaming } from "./actions";
+import { createProperty } from "./actions";
 
 const PAGE_SIZE = 50;
 
@@ -28,7 +28,7 @@ export default async function CampaignsPage({
   // zero-activity campaigns always landed on page 1 regardless of date range.
   let query = supabase
     .from("campaign")
-    .select("id, name, status, objective, ad_account(name), property(name)")
+    .select("id, name, status, objective, city, ad_account(name), property(name)")
     .eq("workspace_id", workspaceId ?? "");
 
   if (params.q) query = query.ilike("name", `%${params.q}%`);
@@ -71,11 +71,13 @@ export default async function CampaignsPage({
       objective: c.objective as string | null,
       adAccountName: (adAccount as { name?: string } | null)?.name ?? "—",
       propertyName: (property as { name?: string } | null)?.name ?? null,
+      city: (c.city as string | null) ?? null,
       spend,
       impressions,
       leads,
       cpl,
       health: computeHealthStatus({ status: c.status as string | null, ctr, frequency, spend, impressions, leads }),
+      recommendation: null,
     };
   });
 
@@ -88,6 +90,23 @@ export default async function CampaignsPage({
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const from = (page - 1) * PAGE_SIZE;
   const rows = allRows.slice(from, from + PAGE_SIZE);
+
+  // Profitability Advisor (Section 9.10) verdicts — fetched only for the
+  // current page's campaigns, latest snapshot per campaign.
+  if (rows.length > 0) {
+    const { data: snapshots } = await supabase
+      .from("profitability_snapshot")
+      .select("campaign_id, recommendation, evaluated_at")
+      .in("campaign_id", rows.map((r) => r.id))
+      .order("evaluated_at", { ascending: false });
+    const latestByCampaign = new Map<string, string>();
+    for (const s of snapshots ?? []) {
+      if (!latestByCampaign.has(s.campaign_id)) latestByCampaign.set(s.campaign_id, s.recommendation);
+    }
+    for (const r of rows) {
+      r.recommendation = (latestByCampaign.get(r.id) as CampaignRow["recommendation"]) ?? null;
+    }
+  }
 
   const completenessPct = totalCampaignCount ? Math.round(((taggedCount ?? 0) / totalCampaignCount) * 100) : 0;
 
@@ -125,12 +144,6 @@ export default async function CampaignsPage({
           />
           <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
             Search
-          </button>
-        </form>
-
-        <form action={autoTagFromNaming}>
-          <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
-            Auto-tag from naming
           </button>
         </form>
       </div>

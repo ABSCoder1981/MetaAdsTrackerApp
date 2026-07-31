@@ -8,4 +8,5 @@ export const RULE_LABELS: Record<string, string> = {
   lead_volume_dropped: "Lead volume dropped",
   campaign_rejected: "Campaign rejected",
   sync_failure: "Sync / API failure",
+  pause_recommended: "Pause recommended (Profitability Advisor)",
 };

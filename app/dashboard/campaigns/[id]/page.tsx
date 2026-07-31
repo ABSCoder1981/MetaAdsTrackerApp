@@ -11,6 +11,13 @@ import {
   computeDaysUntilExhaustion,
   computePacingStatus,
 } from "@/lib/campaigns/budgetPacing";
+import {
+  CLASSIFICATION_LABEL,
+  RECOMMENDATION_LABEL,
+  RECOMMENDATION_CLASS,
+  type ProfitabilityClassification,
+  type ProfitabilityRecommendation,
+} from "@/lib/profitability/labels";
 
 function isoDaysAgo(n: number): string {
   const d = new Date();
@@ -98,6 +105,15 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     behind: "text-amber-600",
   };
 
+  // Profitability Advisor (Section 9.10) — latest evaluation snapshot.
+  const { data: latestProfitability } = await supabase
+    .from("profitability_snapshot")
+    .select("spend_to_date, leads_to_date, cpl, estimated_revenue, estimated_profit_loss, classification, recommendation, reason, days_below_break_even, evaluated_at")
+    .eq("campaign_id", id)
+    .order("evaluated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   // Live ad set / ad / creative drill-down — fetched fresh on each view, not
   // stored, since it's structural detail for one campaign rather than a
   // daily-sync-scale rollup (docs/DEVELOPMENT_PLAN.md Sprint 3 notes).
@@ -180,6 +196,53 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
             <p className="text-xs uppercase text-zinc-500">Pacing</p>
             <p className={`text-lg font-semibold ${PACING_CLASS[pacingStatus]}`}>{PACING_LABEL[pacingStatus]}</p>
+          </div>
+        )}
+      </div>
+
+      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Profitability & Recommendation</h2>
+      <div className="mb-8">
+        {!latestProfitability ? (
+          <p className="text-sm text-zinc-500">
+            No verdict yet — needs a Property tag with assumed conversion rate / avg deal value configured (see
+            Properties page), plus enough spend to clear the workspace&rsquo;s minimum-spend eligibility threshold.
+          </p>
+        ) : (
+          <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="rounded bg-zinc-100 px-2 py-1 text-xs font-medium dark:bg-zinc-800">
+                {CLASSIFICATION_LABEL[latestProfitability.classification as ProfitabilityClassification]}
+              </span>
+              <span
+                className={`rounded px-2 py-1 text-xs font-medium ${RECOMMENDATION_CLASS[latestProfitability.recommendation as ProfitabilityRecommendation]}`}
+              >
+                {RECOMMENDATION_LABEL[latestProfitability.recommendation as ProfitabilityRecommendation]}
+              </span>
+              <span className="text-xs text-zinc-500">
+                Evaluated {new Date(latestProfitability.evaluated_at).toLocaleString()}
+              </span>
+            </div>
+            <p className="mb-4 text-sm text-zinc-700 dark:text-zinc-300">{latestProfitability.reason}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div>
+                <p className="text-xs uppercase text-zinc-500">Spend to date</p>
+                <p className="font-semibold">{Number(latestProfitability.spend_to_date).toFixed(0)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-zinc-500">Est. Revenue</p>
+                <p className="font-semibold">{Number(latestProfitability.estimated_revenue).toFixed(0)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-zinc-500">Est. Profit/Loss</p>
+                <p className={`font-semibold ${Number(latestProfitability.estimated_profit_loss) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  {Number(latestProfitability.estimated_profit_loss).toFixed(0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-zinc-500">Days below break-even</p>
+                <p className="font-semibold">{latestProfitability.days_below_break_even}</p>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -68,10 +68,29 @@ the Director view (no dedicated Admin data-dashboard in Section 11; small teams 
 Section 5.1). A new `workspace_daily_trend` RPC feeds the 30-day trend line without collapsing dates the way the
 Sprint 3 aggregation RPC does.
 
-⚠️ **Manager/Executive tracking was removed from the app entirely** shortly after this sprint, at the business's
-explicit request — this deviates from the PRD's Sections 7.3–7.5 (personas), 9.10 (Team Performance), 11.3–11.5
-(their dashboards), and 21 (their RBAC roles). See `docs/DEVELOPMENT_PLAN.md`'s Deviation Log for the full
-rationale; the removal migration is `supabase/migrations/0007_remove_manager_executive.sql`.
+📝 **Manager/Executive tracking was removed from the app entirely** shortly after Sprint 6-7, at the business's
+explicit request — at the time this deviated from the then-current PRD. **The PRD was subsequently updated to
+v4.0**, which formalizes that decision (Supervisor/Campaign Executive personas dropped for good, flat org model)
+while restoring a full-workspace-scope **Marketing Manager** role (no per-person campaign attribution) — see
+below. What was a deviation is now the documented spec; see `docs/DEVELOPMENT_PLAN.md`'s Deviation Log for the
+full history.
+
+✅ **PRD v4.0 alignment** complete — the PRD was substantially revised (personas reduced to 5, no
+naming-convention auto-parsing, City becomes an independent bulk-taggable tag, and a new MVP module: the
+**Campaign Profitability & Continue/Pause Advisor**, Section 9.10). Changes made:
+- **Naming-convention auto-parsing removed entirely** (`lib/campaigns/naming.ts` deleted) — PRD v4 Section 5.1
+  explicitly forbids it: "the system will not attempt to auto-parse campaign names... tagging is manual, in-app."
+  Property and City are now two independent bulk-taggable fields (Section 9.2), not one derived from the other.
+- **Marketing Manager role restored** (`supabase/migrations/0008_prd_v4_alignment.sql`) with full-workspace
+  scope (RBAC matrix Section 21) — a new Manager Dashboard (Section 11.3) shows workspace-wide spend/leads/CPL,
+  campaigns needing attention, and Profitability/Pause recommendations.
+- **Campaign Profitability & Continue/Pause Advisor built** (Section 9.10) — a deterministic, rule-based
+  (no AI/LLM call, per Section 23's explicit direction) per-campaign classification (Profitable / Break-even /
+  Loss-making) and recommendation (Continue / Monitor / Reduce Budget / Pause), each with a templated,
+  numbers-traceable reason. Runs as part of every sync (`lib/profitability/evaluate.ts`), surfaced on the
+  Campaign Monitoring table, Campaign Detail page, all three business dashboards, a new dedicated
+  `/dashboard/profitability` view, and a new `pause_recommended` alert rule. Thresholds (break-even margin,
+  consecutive-day window, minimum spend for eligibility) are workspace-configurable by Administrators.
 
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
@@ -79,11 +98,15 @@ See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build pl
 
 | Document | Purpose |
 |---|---|
-| [`docs/prd-source/`](docs/prd-source/) | Original PRD (v1.0, 2026-07-28), source of truth for requirements |
+| [`docs/prd-source/`](docs/prd-source/) | PRD source — v1.0 (2026-07-28) and v4.0 (current), see below |
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | End-to-end build plan: phases, sprints, epics, acceptance gates |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Technical architecture, stack, API surface, integration design |
 | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Database schema (DDL), RLS policy design, indexing/partitioning strategy |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Sprint-by-sprint roadmap with dates, deliverables, and dependencies |
+
+`docs/prd-source/` holds both `...v1.0.pdf` (original) and `...v4.0.pdf` (current, supersedes v1.0) — kept
+side by side rather than overwritten, so the Deviation Log's "what changed and when" stays checkable against the
+actual source documents.
 
 ## Quick facts
 
@@ -147,8 +170,12 @@ CRM lead webhook (external systems can't hold a session cookie).
 aggregation RPC behind the dashboards' 30-day spend/leads trend line.
 
 `supabase/migrations/0007_remove_manager_executive.sql` drops `campaign.manager_id`/`executive_id`, the
-`sales_team_employee` table, and the Marketing Manager/Supervisor/Campaign Executive RBAC roles — a deliberate
-deviation from the PRD, see `docs/DEVELOPMENT_PLAN.md`'s Deviation Log.
+`sales_team_employee` table, and all three Manager/Supervisor/Executive RBAC roles — a deviation from the PRD at
+the time, later formalized (partially) by PRD v4.
+
+`supabase/migrations/0008_prd_v4_alignment.sql` restores the Marketing Manager role (full-workspace scope, not
+per-person), adds `campaign.city` as an independent tag, and adds the Profitability Advisor's
+`profitability_snapshot` table + `workspace.profitability_thresholds`.
 
 Verification scripts:
 
@@ -160,5 +187,5 @@ Verification scripts:
 | `scripts/verify-sprint2-pilot.mjs` | Pulls synced campaign metrics for manual Ads Manager reconciliation | service_role key |
 | `scripts/verify-sprint4-schema.mjs` | Confirms `workspace.webhook_secret` migrated correctly | service_role key |
 
-Run `npm test` for the unit test suite (vitest) — pure business logic like the naming-convention parser, health
-heuristic, date-range math, and ROI calculations.
+Run `npm test` for the unit test suite (vitest) — pure business logic like the health heuristic, budget pacing
+math, date-range math, ROI calculations, and the Profitability Advisor's classification/recommendation rules.

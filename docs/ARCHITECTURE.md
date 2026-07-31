@@ -12,8 +12,9 @@ concrete implementation decisions. This is the reference engineers should build 
 | Database | Supabase (managed Postgres) | Row-Level Security enforced per `workspace_id` on every table |
 | Auth | Supabase Auth | Workspace-scoped sessions, workspace switcher for multi-workspace users |
 | Meta API Integration | System User per workspace, Vercel Cron scheduler | Never a personal Facebook login — survives staff turnover |
-| Background jobs / queue | Vercel Cron (sync) + Supabase Edge Functions (alert evaluation, notification dispatch) | Decoupled from user-facing request cycles |
-| Notifications | Resend/SendGrid (email), WhatsApp Business Cloud API (pre-approved templates), Supabase Realtime (in-app) | WhatsApp is additive post-approval, not launch-blocking |
+| Background jobs / queue | Vercel Cron triggers the sync job (`app/api/cron/sync`); alert evaluation (`lib/alerts/evaluate.ts`) and Profitability Advisor evaluation (`lib/profitability/evaluate.ts`) run inline at the end of each ad account's sync, not as separate Supabase Edge Functions | Simpler than a separate queue at this scale — both evaluators are batched-query, not per-campaign, so they don't meaningfully extend the sync's runtime. Revisit if evaluation ever needs to run more often than sync does. |
+| Profitability Rules Engine | Deterministic threshold logic in `lib/profitability/rules.ts`, run as part of the Next.js sync job — no external AI/LLM API call | PRD v4 Section 23's explicit instruction: keeps the advisor auditable, free of per-call AI cost, fast enough to run on every sync cycle, and reproducible (Section 28: same inputs always produce the same verdict) |
+| Notifications | Resend/SendGrid (email), WhatsApp Business Cloud API (pre-approved templates), Supabase Realtime (in-app) | WhatsApp is additive post-approval, not launch-blocking. **Not yet built** — alert/report delivery is currently in-app only (Alerts Centre UI); email/WhatsApp dispatch is Sprint 9-ish scope. |
 | Hosting | Vercel | Zero-config previews per PR |
 | CI/CD | GitHub Actions → Vercel preview → production on merge to `main` | Branch protection required on `main` |
 

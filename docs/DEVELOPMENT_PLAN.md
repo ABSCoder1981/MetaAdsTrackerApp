@@ -270,13 +270,14 @@ Every bullet in PRD Section 28 must be traceable to the epic that satisfies it b
 
 ## 11. Deviation Log (business-decided divergences from the PRD)
 
-Changes made at the business's explicit request that contradict what the PRD itself specifies — kept here so
-anyone reading the PRD alongside the codebase later understands why they disagree, rather than assuming a bug or
-an incomplete build.
+Changes made at the business's explicit request that contradict what the PRD in force *at the time* specified —
+kept here so anyone reading the PRD alongside the codebase later understands why they disagree, rather than
+assuming a bug or an incomplete build. Entries are dated because the PRD itself has since moved (v1.0 → v4.0);
+what was a deviation against v1.0 may since be the documented spec in v4.0 — each entry says so explicitly.
 
-### Manager/Executive tracking removed entirely (Sprint 6-7, post-launch)
+### Manager/Executive tracking removed entirely (Sprint 6-7, post-launch, against PRD v1.0) — later formalized by PRD v4.0
 
-**What the PRD specifies:** Manager, Supervisor, and Campaign Executive as three of the seven core personas
+**What PRD v1.0 specified:** Manager, Supervisor, and Campaign Executive as three of the seven core personas
 (Sections 7.3–7.5), with their own dashboards (Sections 11.3–11.5), Team & Employee Performance tracking and
 leaderboards (Section 9.10), campaign tagging by manager/executive (Section 9.2), and corresponding RBAC roles
 and permissions (Section 21).
@@ -285,13 +286,68 @@ and permissions (Section 21).
 table, the three RBAC roles, their three dashboards, the Manager Leaderboard widget, and the "Add Team Member" /
 manager-tagging UI were all built in Sprints 1, 3, and 6-7 — then removed in full once the business clarified
 they don't track campaigns by manager/executive at all. This was confirmed twice explicitly before removal (see
-conversation record) given how much it contradicted the PRD's own stated requirements.
+conversation record) given how much it contradicted PRD v1.0's own stated requirements. The naming-convention
+parser (`lib/campaigns/naming.ts`) was kept at this point, minus its manager-persistence step — it still located
+the Property name via the "text before the first ` - `" heuristic.
 
-**What remains:** the naming-convention parser (`lib/campaigns/naming.ts`) still structurally identifies a
-manager-like name prefix in campaign names — that's how it locates where the actual Property name starts (the
-convention is `Manager - Property Objective Campaign MonthYear`) — it's just never persisted as a manager tag
-anymore. CEO/Director dashboards, Property/City leaderboards, and CPL/lead reporting are unaffected, since none
-of those depended on the manager/executive concept.
+**PRD v4.0 update (supersedes this entry):** the PRD itself was revised. Supervisor and Campaign Executive are
+gone for good — v4.0 formally adopts a flat org model (Section 5.1: "one Manager/Director-level role sees the
+full workspace rather than campaigns being scoped to individual people"), matching what was already built. But
+**Marketing Manager comes back** as one of the 5 finalized personas (Section 7.3) — full-workspace scope, not
+per-person — with its own role, dashboard (Section 11.3), and RBAC row (Section 21). Migration
+`0008_prd_v4_alignment.sql` restores it. What was a full removal is now a partial restoration to match the
+current spec, not a re-deviation.
 
-**If this is ever revisited:** the removal migration is `supabase/migrations/0007_remove_manager_executive.sql` —
-reverting means restoring those columns/table/roles and rebuilding the three dashboards, not just flipping a flag.
+### No campaign naming-convention auto-parsing (formalized by PRD v4.0, removed from the app)
+
+**What changed:** PRD v4.0 Section 5.1 explicitly states "the system will not attempt to auto-parse campaign
+names to extract property, city, or any other attribute — tagging is manual, in-app, done once per campaign by
+whoever sets it up." This contradicts PRD v1.0's Section 5.1, which recommended a naming convention specifically
+*to be* auto-parsed, and which Sprint 3 (Epic A) built support for.
+
+**What was built, then removed:** `lib/campaigns/naming.ts` (a regex-based parser) and the "Auto-tag from
+naming" button on Campaigns were built in Sprint 3, used successfully against real production data (confirmed
+working — see Sprint 3/4 verification notes), then deleted entirely once PRD v4.0 made the "no auto-parsing"
+decision explicit. Property and City are now two independent manually-bulk-tagged fields (Section 9.2) — City is
+no longer even derived from Property, it's its own campaign-level column.
+
+**Why this isn't a loss:** the naming-convention parser's real weakness — ambiguous multi-dash campaign names
+(e.g. `Madhusmruti - Kothrud - Hemant Leads Campaign June-26`, where it's unclear whether "Kothrud - Hemant" is
+one property name or two concepts) — is exactly what prompted the business to reconsider auto-parsing in the
+first place. Manual tagging has no such ambiguity.
+
+---
+
+## 12. Campaign Profitability & Continue/Pause Advisor (PRD v4.0 Section 9.10 — new MVP module)
+
+Not in PRD v1.0 at all; added in v4.0 as a full MVP-tagged module. Built as part of the same alignment pass that
+removed naming auto-parse and restored Marketing Manager, rather than as its own numbered sprint — logged here
+since it doesn't map to the original Sprint 3–10 plan.
+
+**What it does:** for every Property-tagged campaign with ROI assumptions configured and enough total spend to
+clear an eligibility floor, computes a deterministic (no AI/LLM call, per Section 23's explicit instruction)
+classification — Profitable / Break-even / Loss-making — and a paired recommendation — Continue / Monitor /
+Reduce Budget / Pause — with a plain-language, numbers-traceable reason (e.g. "Estimated Profit/Loss negative
+for 8 consecutive days (threshold: 7). CPL 32% above break-even threshold."). Advisory only; nothing in the app
+can pause a campaign in Meta (Section 6, Out of Scope, unchanged from v1.0).
+
+**Where it runs:** `lib/profitability/evaluate.ts`, called once per ad account at the end of every sync
+(`lib/meta/sync.ts`) — same batched-query pattern as the alert engine (Sprint 5), not one query per campaign.
+
+**What it touches:**
+- `profitability_snapshot` table — one row per campaign per evaluation run (Section 18.1's new entity), so
+  "days below break-even" is a real consecutive-run counter, not a guess.
+- `workspace.profitability_thresholds` — break-even margin %, consecutive-day threshold, minimum spend for
+  eligibility, all Admin-configurable (Section 9.10's explicit requirement) via `/dashboard/profitability`.
+- A new alert rule, `pause_recommended` (red, Section 17), deduped like every other rule in `lib/alerts/`.
+- Surfaced on: Campaign Monitoring table (badge column), Campaign Detail page (dedicated section), CEO Dashboard
+  (Profitable/Break-even/Loss-making counts), Management and Manager Dashboards (a recommendations panel), and
+  its own `/dashboard/profitability` list view with the Admin-only threshold form (Section 12's screen spec).
+
+**Deliberately not built:** the Reports Centre delivery of the "Profitability & Recommendation Report" (Section
+15) — report generation/email delivery isn't built for any report yet (tracked as Epic G/Sprint 9-ish scope in
+Section 4 of this plan), so this one report type isn't ahead of the others.
+
+**Test coverage:** `lib/profitability/rules.ts` (16 tests) — classification boundaries, the consecutive-day
+counter, all four recommendation branches, and that the reason text actually contains the numbers it claims to
+(Section 28's "reproducible from its stated inputs" acceptance criterion).

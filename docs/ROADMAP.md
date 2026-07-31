@@ -16,7 +16,7 @@ differs.
 | 4 | Sep 28 – Oct 9, 2026 | MVP | Lead Analytics + Property Analytics (Epics B, C) | Unified lead table, property leaderboard, Estimated ROI labeling |
 | 5 | Oct 12 – Oct 23, 2026 | MVP | Budget Pacing + Alerts engine (Epics D, E) | All 12 alert rules implemented and testable |
 | 6 | Oct 26 – Nov 6, 2026 | MVP | Dashboards, part 1 (Epic F) | CEO + Director dashboards live |
-| 7 | Nov 9 – Nov 20, 2026 | MVP | Dashboards, part 2 + Reports (Epics F, G) | Manager/Supervisor/Executive/Analyst dashboards, Daily Digest live |
+| 7 | Nov 9 – Nov 20, 2026 | MVP | Dashboards, part 2 + Reports (Epics F, G) | Manager/Analyst dashboards, Daily Digest live — Supervisor/Executive dashboards dropped per PRD v4's flat org model (see `DEVELOPMENT_PLAN.md` Deviation Log) |
 | 8 | Nov 23 – Dec 4, 2026 | MVP | Team Performance + Export Centre (Epics H, I) | Leaderboards, CSV/XLSX/PDF export |
 | 9 | Dec 7 – Dec 18, 2026 | MVP | Admin/Role Mgmt + Audit Logs (Epics J, K) | Self-serve user/ad-account onboarding |
 | 10 | Dec 21, 2026 – Jan 8, 2027* | MVP | Hardening & Acceptance | All Section 28 acceptance criteria pass |
@@ -30,7 +30,7 @@ may compress into 1.5 sprints with the remainder absorbed as slack, given typica
 |---|---|---|
 | Stage 2 — onboard remaining Ad Accounts, run parallel with manual reporting for 1 week | Week of Jan 11, 2027 | Sprint 10 exit gate passed |
 | Stage 3 — switch reporting fully to system | Week of Jan 18, 2027 | Stage 2 trust-building week complete |
-| Stage 4 — dashboard rollout + short walkthrough to Managers/Supervisors/Executives | Week of Jan 25, 2027 | Stage 3 complete |
+| Stage 4 — dashboard rollout + short walkthrough to Managers (flat org model, PRD v4) | Week of Jan 25, 2027 | Stage 3 complete |
 | Phase 2 kickoff | Not calendar-fixed — begins once Phase 1 exit gate is signed off and business priorities confirm Phase 2 scope | Stage 4 stable in production |
 | Phase 3 kickoff | Trigger-based only — first white-label contract signed | N/A |
 

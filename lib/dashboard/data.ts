@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { rollupByProperty } from "@/lib/analytics/propertyRollup";
 import { rollupByKey } from "@/lib/analytics/groupRollup";
 import { computeEstimatedRevenue } from "@/lib/analytics/estimatedRoi";
+import { computeHealthStatus } from "@/lib/campaigns/health";
 import type { LeaderboardRow } from "@/components/dashboard/LeaderboardTable";
 import type { AlertPanelRow } from "@/components/dashboard/AlertPanel";
 import type { WorkspaceTrendPoint } from "@/components/dashboard/WorkspaceTrendChart";
@@ -15,11 +16,19 @@ export type CampaignForDashboard = {
   city: string | null;
 };
 
+export type DashboardMetricsEntry = {
+  totalSpend: number;
+  totalImpressions: number;
+  totalLeads: number;
+  latestCtr: number | null;
+  latestFrequency: number | null;
+};
+
 export type DashboardData = {
   campaigns: CampaignForDashboard[];
-  metricsToday: Map<string, { totalSpend: number; totalImpressions: number; totalLeads: number }>;
-  metricsYesterday: Map<string, { totalSpend: number; totalImpressions: number; totalLeads: number }>;
-  metricsLast30: Map<string, { totalSpend: number; totalImpressions: number; totalLeads: number }>;
+  metricsToday: Map<string, DashboardMetricsEntry>;
+  metricsYesterday: Map<string, DashboardMetricsEntry>;
+  metricsLast30: Map<string, DashboardMetricsEntry>;
   trend: WorkspaceTrendPoint[];
   alerts: AlertPanelRow[];
   properties: { id: string; name: string; assumedConversionRate: number | null; assumedAvgDealValue: number | null }[];
@@ -31,7 +40,7 @@ function isoDaysAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function toMetricsMap(rows: Record<string, unknown>[] | null) {
+function toMetricsMap(rows: Record<string, unknown>[] | null): Map<string, DashboardMetricsEntry> {
   return new Map(
     (rows ?? []).map((m) => [
       m.campaign_id as string,
@@ -39,6 +48,8 @@ function toMetricsMap(rows: Record<string, unknown>[] | null) {
         totalSpend: Number(m.total_spend ?? 0),
         totalImpressions: Number(m.total_impressions ?? 0),
         totalLeads: Number(m.total_leads ?? 0),
+        latestCtr: m.latest_ctr != null ? Number(m.latest_ctr) : null,
+        latestFrequency: m.latest_frequency != null ? Number(m.latest_frequency) : null,
       },
     ])
   );
@@ -60,7 +71,7 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
   ] = await Promise.all([
     supabase
       .from("campaign")
-      .select("id, status, ad_account(name), property_id, property(name, city)")
+      .select("id, status, city, ad_account(name), property_id, property(name, city)")
       .eq("workspace_id", workspaceId),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: today, p_until: today }),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: yesterday, p_until: yesterday }),
@@ -88,7 +99,11 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
       adAccountName: (adAccount as { name?: string } | null)?.name ?? "—",
       propertyId: c.property_id as string | null,
       propertyName: (property as { name?: string } | null)?.name ?? null,
-      city: (property as { city?: string } | null)?.city ?? null,
+      // City is an independent campaign-level tag (PRD v4 Section 9.2), not
+      // derived from Property — but falls back to the property's city if
+      // the campaign wasn't explicitly city-tagged, so older/partially
+      // tagged data still rolls up somewhere useful.
+      city: (c.city as string | null) ?? (property as { city?: string } | null)?.city ?? null,
     };
   });
 
@@ -184,4 +199,26 @@ export function cityLeaderboard(data: DashboardData): LeaderboardRow[] {
     data.campaigns.map((c) => ({ id: c.id, key: c.city ?? "Unknown" })),
     data.metricsLast30
   ).map((r) => ({ key: r.key, name: r.key, spend: r.spend, leads: r.leads, cpl: r.cpl }));
+}
+
+/** Section 11.3 Manager Dashboard: "Campaigns needing attention
+ * (Red/Amber)" — reuses the same health heuristic as Campaign Monitoring
+ * (lib/campaigns/health.ts) rather than a second, dashboard-specific one. */
+export function campaignsNeedingAttention(
+  data: DashboardData
+): { id: string; name: string; adAccountName: string; health: "amber" | "red" }[] {
+  return data.campaigns
+    .map((c) => {
+      const m = data.metricsToday.get(c.id);
+      const health = computeHealthStatus({
+        status: c.status,
+        ctr: m?.latestCtr ?? null,
+        frequency: m?.latestFrequency ?? null,
+        spend: m?.totalSpend ?? 0,
+        impressions: m?.totalImpressions ?? 0,
+        leads: m?.totalLeads ?? 0,
+      });
+      return { id: c.id, name: c.propertyName ?? c.adAccountName, adAccountName: c.adAccountName, health };
+    })
+    .filter((c): c is { id: string; name: string; adAccountName: string; health: "amber" | "red" } => c.health === "amber" || c.health === "red");
 }

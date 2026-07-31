@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchCampaigns, fetchInsights, extractLeadCount, MetaApiError } from "./client";
 import { evaluateAndCreateAlerts } from "@/lib/alerts/evaluate";
+import { evaluateAndStoreProfitability } from "@/lib/profitability/evaluate";
 
 type AdAccountRow = {
   id: string;
@@ -98,7 +99,7 @@ export async function syncAdAccount(
 
     const { data: campaignRows } = await admin
       .from("campaign")
-      .select("id, meta_campaign_id, status, effective_status, daily_budget, lifetime_budget, budget_remaining")
+      .select("id, meta_campaign_id, status, effective_status, daily_budget, lifetime_budget, budget_remaining, property_id")
       .eq("ad_account_id", adAccount.id);
     const campaignIdByMetaId = new Map((campaignRows ?? []).map((r) => [r.meta_campaign_id, r.id]));
 
@@ -172,6 +173,9 @@ export async function syncAdAccount(
     }));
 
     await evaluateAndCreateAlerts(admin, adAccount.workspace_id, adAccount.id, campaignsForAlerts, historyByCampaign);
+
+    const campaignsForProfitability = (campaignRows ?? []).map((r) => ({ id: r.id, propertyId: r.property_id }));
+    await evaluateAndStoreProfitability(admin, adAccount.workspace_id, campaignsForProfitability);
 
     await admin
       .from("ad_account")

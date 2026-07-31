@@ -1,14 +1,27 @@
 # Data Model
 
 Elaborates PRD Section 18 (Data Model & ER Diagram) and Section 19 (Database Design) into a concrete DDL sketch.
-This is a starting schema for Sprint 1 — refine field lists during implementation, but do not change the entity
-boundaries or the `workspace_id`-everywhere pattern without updating this doc.
+This was the starting schema for Sprint 1 — the entity boundaries and `workspace_id`-everywhere pattern held, but
+the exact DDL below has since diverged from the live schema as the app evolved (`Sales Team / Employee` was
+built, then removed; `Profitability Snapshot` was added; `Campaign` gained an independent `city` column). **The
+`supabase/migrations/*.sql` files are the authoritative current schema** — this document explains the *shape* of
+the data model, but see §7 below for what's changed since this sketch was written, and read the migrations for
+exact current columns.
 
-## 1. Entity List (from PRD Section 18.1)
+## 0. Schema Evolution (read this before trusting the DDL sketch below)
+
+| Migration | What changed |
+|---|---|
+| `0001_core_schema.sql` | Implements most of the sketch below, including `sales_team_employee`. |
+| `0002`–`0006` | Additive: Meta sync infra, campaign monitoring RPC, lead webhook, budget/alert columns, dashboard trend RPC. Don't change the entities described here. |
+| `0007_remove_manager_executive.sql` | **Removes** `sales_team_employee` entirely, and `campaign.manager_id`/`executive_id`. See `DEVELOPMENT_PLAN.md`'s Deviation Log. |
+| `0008_prd_v4_alignment.sql` | Adds `campaign.city` (independent tag, not derived from Property — PRD v4 Section 9.2), adds the **Profitability Snapshot** entity (`profitability_snapshot` table) and `workspace.profitability_thresholds`, restores the Marketing Manager RBAC role (full-workspace scope — `sales_team_employee` stays gone, this is just a `role` row). |
+
+## 1. Entity List (from PRD Section 18.1, as amended by v4.0 — see §0)
 
 Workspace · Business Manager · Ad Account · Campaign · Ad Set · Ad · Creative · Audience · Pixel · Lead · Property ·
-Sales Team / Employee · Customer · Daily Metrics · Historical Metrics · Alert · Notification · Audit Log ·
-Role / Permission
+~~Sales Team / Employee~~ (removed, §0) · **Profitability Snapshot** (added, PRD v4 Section 18.1) · Customer ·
+Daily Metrics · Historical Metrics · Alert · Notification · Audit Log · Role / Permission
 
 ## 2. Core Relationships (from PRD Section 18.2)
 
@@ -88,15 +101,25 @@ create table property (
   assumed_avg_deal_value numeric
 );
 
-create table sales_team_employee (
-  id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references workspace(id),
-  user_id uuid references auth.users(id),
-  name text not null,
-  role text not null, -- Manager | Supervisor | Executive
-  reports_to uuid references sales_team_employee(id)
-);
+-- REMOVED in migration 0007 (§0) — kept struck through here rather than
+-- deleted from this doc, so the Deviation Log's history stays checkable.
+-- do not recreate without re-reading DEVELOPMENT_PLAN.md's Deviation Log.
+--
+-- create table sales_team_employee (
+--   id uuid primary key default gen_random_uuid(),
+--   workspace_id uuid not null references workspace(id),
+--   user_id uuid references auth.users(id),
+--   name text not null,
+--   role text not null, -- Manager | Supervisor | Executive
+--   reports_to uuid references sales_team_employee(id)
+-- );
 
+-- v4.0 update: manager_id/executive_id removed (§0, migration 0007); city
+-- added as its own tag, independent of property (§0, migration 0008) — PRD
+-- v4 Section 9.2: "manually assign Property and City to campaigns... no
+-- automatic parsing of campaign names," so tagging_source is now always
+-- 'manual' in practice (the 'naming_convention' value is a historical
+-- leftover from before the naming parser was deleted).
 create table campaign (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references workspace(id),
@@ -107,9 +130,8 @@ create table campaign (
   status text,
   buying_type text,
   property_id uuid references property(id),
-  manager_id uuid references sales_team_employee(id),
-  executive_id uuid references sales_team_employee(id),
-  tagging_source text not null default 'manual', -- 'naming_convention' | 'manual'
+  city text,
+  tagging_source text not null default 'manual', -- 'naming_convention' (legacy) | 'manual'
   created_at timestamptz not null default now()
 );
 
@@ -201,6 +223,27 @@ create index idx_daily_metrics_hot_path on daily_metrics (workspace_id, campaign
 -- Same shape as daily_metrics; populated by the monthly archival job (Section 19).
 create table historical_metrics (like daily_metrics including all);
 
+-- Added in PRD v4.0 (§0, migration 0008) — Section 9.10's Profitability &
+-- Continue/Pause Advisor. One row per campaign per evaluation run (run
+-- once per ad account per sync, lib/profitability/evaluate.ts), so
+-- days_below_break_even is a real consecutive-run counter derived from
+-- prior rows, not a guess.
+create table profitability_snapshot (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspace(id),
+  campaign_id uuid not null references campaign(id),
+  evaluated_at timestamptz not null default now(),
+  spend_to_date numeric not null,
+  leads_to_date bigint not null,
+  cpl numeric,
+  estimated_revenue numeric,
+  estimated_profit_loss numeric,
+  classification text not null, -- 'profitable' | 'break_even' | 'loss_making'
+  recommendation text not null, -- 'continue' | 'monitor' | 'reduce_budget' | 'pause'
+  reason text not null,          -- templated, not AI-generated (PRD explicit requirement)
+  days_below_break_even integer not null default 0
+);
+
 create table alert (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references workspace(id),
@@ -263,9 +306,11 @@ create policy "workspace_isolation" on campaign
   );
 ```
 
-RBAC-level restrictions (e.g., an Executive seeing only their own campaigns, a Manager not seeing another Manager's
-compensation-linked KPIs) are layered as **additional** policy conditions referencing `sales_team_employee` and
-`permission`, on top of — never instead of — the workspace isolation policy.
+RBAC-level restrictions are layered as **additional** policy conditions referencing `permission`, on top of —
+never instead of — the workspace isolation policy. (The per-person scoping example this section originally gave
+— an Executive seeing only their own campaigns — no longer applies: PRD v4's flat org model means every business
+role sees the full workspace, so RBAC restrictions in practice are about *action* type — view/edit/export/approve
+— not row-level scoping beyond the workspace boundary itself.)
 
 ## 6. Open Schema Questions for Sprint 1
 

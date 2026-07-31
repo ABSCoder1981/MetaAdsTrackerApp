@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { bulkTagCampaigns } from "@/app/dashboard/campaigns/actions";
 import { HEALTH_DOT_CLASS, HEALTH_LABEL, type HealthStatus } from "@/lib/campaigns/health";
+import { RECOMMENDATION_LABEL, RECOMMENDATION_CLASS, type ProfitabilityRecommendation } from "@/lib/profitability/labels";
 
 export type CampaignRow = {
   id: string;
@@ -12,11 +13,13 @@ export type CampaignRow = {
   objective: string | null;
   adAccountName: string;
   propertyName: string | null;
+  city: string | null;
   spend: number;
   impressions: number;
   leads: number;
   cpl: number | null;
   health: HealthStatus;
+  recommendation: ProfitabilityRecommendation | null;
 };
 
 type Option = { id: string; name: string };
@@ -64,6 +67,11 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
               </option>
             ))}
           </select>
+          <input
+            name="city"
+            placeholder="City…"
+            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+          />
           <button
             type="submit"
             disabled={isPending}
@@ -75,7 +83,7 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
       )}
 
       <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[800px] text-left text-sm">
+        <table className="w-full min-w-[950px] text-left text-sm">
           <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-3 py-2">
@@ -95,6 +103,8 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
               <th className="px-3 py-2 text-right">Leads</th>
               <th className="px-3 py-2 text-right">CPL</th>
               <th className="px-3 py-2">Property</th>
+              <th className="px-3 py-2">City</th>
+              <th className="px-3 py-2">Recommendation</th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +131,16 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
                 <td className="px-3 py-2 text-right">{r.leads}</td>
                 <td className="px-3 py-2 text-right">{r.cpl ? r.cpl.toFixed(0) : "—"}</td>
                 <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.propertyName ?? "—"}</td>
+                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.city ?? "—"}</td>
+                <td className="px-3 py-2">
+                  {r.recommendation ? (
+                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${RECOMMENDATION_CLASS[r.recommendation]}`}>
+                      {RECOMMENDATION_LABEL[r.recommendation]}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-zinc-400">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
