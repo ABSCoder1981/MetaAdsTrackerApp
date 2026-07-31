@@ -208,6 +208,13 @@ These don't belong to one sprint — they're tracked continuously across Phase 0
   now with email confirmation disabled in dev, but real user onboarding (Rollout Stage 1+) needs custom SMTP
   configured in Supabase Auth settings before launch — track this alongside the WhatsApp approval item above as a
   pre-launch dependency, not a Sprint 1 blocker.
+- **Sprint 2 pilot accuracy reconciliation** — the pilot Ad Account synced successfully against real production
+  data (922 campaigns, correct names/structure/spend on first run), but the formal side-by-side ±2% comparison
+  against Ads Manager's own reported numbers (Section 28 acceptance criterion) hasn't been recorded yet. Required
+  before Rollout Stage 2 (onboarding the remaining Ad Accounts), not before Sprint 2 is considered built.
+- **`CRON_SECRET` not yet set in Vercel** — the daily scheduled sync (`vercel.json` → `/api/cron/sync`) will 401
+  until this env var is added; manual "Sync now" via `/dashboard/ad-accounts` is unaffected and fully functional.
+  Set before relying on unattended daily syncs.
 
 ---
 

@@ -11,14 +11,20 @@ launch, or pause live ad campaigns.
 ✅ Sprint 0 (Foundation) complete — Next.js app live on Vercel, connected to a provisioned Supabase project, RLS
 verified end-to-end.
 
-✅ Sprint 1 (Core Schema & Auth) mostly complete — full schema applied (all entities in `docs/DATA_MODEL.md`),
-RBAC role/permission model seeded from PRD Section 21, email/password sign-in + sign-up, workspace
-creation/onboarding, and a protected dashboard shell with a workspace switcher. Verified at the anon level:
-role templates seeded correctly, every workspace-scoped table returns `[]` to anon reads and rejects anon writes
-with a policy violation (`scripts/verify-sprint1-schema.mjs`). **Pending:** the full authenticated round-trip test
-(`scripts/verify-sprint1-e2e.mjs`) — currently blocked by Supabase's built-in 2-emails/hour rate limit on the
-shared SMTP service, not by any app or schema issue; re-run once the quota window clears (or after custom SMTP
-is configured, see Sprint 9).
+✅ Sprint 1 (Core Schema & Auth) complete — full schema applied (all entities in `docs/DATA_MODEL.md`), RBAC
+role/permission model seeded from PRD Section 21, email/password sign-in + sign-up, workspace creation/onboarding,
+and a protected dashboard shell with a workspace switcher. Confirmed working with a real signed-in user in
+production (not just the anon-level checks in `scripts/verify-sprint1-schema.mjs`).
+
+✅ Sprint 2 (Meta API Integration) core pipeline complete and proven against **real production data** — the
+pilot Ad Account synced 922 campaigns and 47 metric rows on first run via the "Connect an Ad Account" /
+"Sync now" UI (`/dashboard/ad-accounts`). Meta System User tokens are stored encrypted in Supabase Vault, never
+in a plain column or env var. **Pending before Rollout Stage 2:**
+- Formal ±2% accuracy reconciliation against Ads Manager's own reported numbers (PRD Section 28 acceptance
+  criterion) — the pipeline is demonstrably pulling correct campaign names/structure/spend, but a side-by-side
+  manual comparison hasn't been recorded yet.
+- `CRON_SECRET` isn't set in Vercel yet, so the daily scheduled sync (`vercel.json` → `/api/cron/sync`) won't
+  authenticate until it is — manual "Sync now" is fully functional in the meantime.
 
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
@@ -76,10 +82,15 @@ uptime checks per the NFR in `docs/ARCHITECTURE.md` §7.
 `supabase/migrations/0001_core_schema.sql` is the full Sprint 1 schema: all entities from `docs/DATA_MODEL.md`,
 workspace-scoped RLS on every table, and the role/permission model seeded from the PRD Section 21 RBAC matrix.
 
-Verification scripts (anon key only, no secrets required):
+`supabase/migrations/0002_meta_sync_infrastructure.sql` adds Meta sync infrastructure: Supabase Vault-backed
+token storage, `sync_log`, sync status columns on `ad_account`, and the unique constraints idempotent upserts
+need.
 
-| Script | Checks |
-|---|---|
-| `scripts/verify-rls.mjs` | Sprint 0 — basic workspace RLS isolation |
-| `scripts/verify-sprint1-schema.mjs` | Role/permission seeding, RLS on every core table |
-| `scripts/verify-sprint1-e2e.mjs` | Real sign-up → workspace creation → cross-user isolation (needs email rate limit headroom) |
+Verification scripts:
+
+| Script | Checks | Needs |
+|---|---|---|
+| `scripts/verify-rls.mjs` | Sprint 0 — basic workspace RLS isolation | anon key only |
+| `scripts/verify-sprint1-schema.mjs` | Role/permission seeding, RLS on every core table | anon key only |
+| `scripts/verify-sprint1-e2e.mjs` | Real sign-up → workspace creation → cross-user isolation | anon key, email rate limit headroom |
+| `scripts/verify-sprint2-pilot.mjs` | Pulls synced campaign metrics for manual Ads Manager reconciliation | service_role key |
