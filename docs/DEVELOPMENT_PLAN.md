@@ -351,3 +351,33 @@ Section 4 of this plan), so this one report type isn't ahead of the others.
 **Test coverage:** `lib/profitability/rules.ts` (16 tests) — classification boundaries, the consecutive-day
 counter, all four recommendation branches, and that the reason text actually contains the numbers it claims to
 (Section 28's "reproducible from its stated inputs" acceptance criterion).
+
+---
+
+## 13. Property Tagging UX Fixes (post-launch, discovered during hands-on testing against production data)
+
+Not scope changes against the PRD — Epic C (Section 9.5) and Epic A's manual tagging (Section 9.2, per the v4.0
+no-auto-parse decision, Section 11 above) were already built to spec. These are UX gaps found only once a real
+user tagged real properties, logged here so the fixes aren't mistaken for new features later.
+
+**Properties page only showed properties with a metrics rollup.** `/dashboard/properties` built its table from
+`rollupByProperty(campaigns, metrics)`, which only emits a row for a property referenced by at least one
+campaign with metrics in the selected date range. A freshly created property with zero campaigns tagged to it
+yet — the normal state right after using "Add Property" — was invisible, with no error or empty-state hint.
+Fixed by building the table from the full `property` list instead, left-joining rollup metrics (defaulting to
+zero for untagged properties) and adding a Campaigns-count column so it's clear at a glance which properties
+still need tagging.
+
+**No way to remove a property tag once set.** Section 9.2's bulk-tagging requirement covered assigning a
+property/city to campaigns, but nothing in the PRD or the original build addressed *un*-assigning one — the
+bulk-tag dropdown's empty option meant "leave unchanged," not "clear." Fixed with a row-level control: clicking
+a campaign's tagged Property name in the Campaign Monitoring table (Epic A) opens a small popover with "Remove
+property tag," scoped to that single campaign, calling the same `bulkTagCampaigns` action with a clear sentinel.
+
+**No way to delete an unused property.** Same gap at the Property entity level — once garbage/duplicate
+properties existed (see the `reset-property-tagging.mjs` cleanup, Section 11), there was no in-app way to remove
+one. Added a Delete action on `/dashboard/properties`, gated to properties with zero tagged campaigns
+(`campaign.property_id` has no `ON DELETE` clause, so Postgres would reject the delete anyway if campaigns still
+referenced it) — the server action re-checks this and throws a clear error rather than cascading, consistent
+with this codebase's existing "never silently destroy data" pattern (see `deleteProperty` in
+`app/dashboard/properties/actions.ts`).
