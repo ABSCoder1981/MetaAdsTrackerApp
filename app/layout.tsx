@@ -41,6 +41,17 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Blocking (not deferred) so data-theme is set before first paint —
+            avoids a flash of the wrong theme when a user has picked one that
+            differs from their OS preference. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegistration />
         {children}

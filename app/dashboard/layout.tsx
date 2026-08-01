@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserWorkspaces, resolveActiveWorkspaceId } from "@/lib/workspace";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { SidebarNav } from "@/components/dashboard/SidebarNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { signOut } from "./actions";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <span className="font-bold text-sm">Dashboard</span>
           <WorkspaceSwitcher workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
           <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
             <span className="text-sm text-muted">{user.email}</span>
             <form action={signOut}>
               <button

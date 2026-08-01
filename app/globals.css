@@ -74,6 +74,55 @@
   }
 }
 
+/* Manual toggle (components/ThemeToggle.tsx) — must win over the OS
+   preference above in both directions, so these are separate selectors
+   rather than folded into the media query. */
+:root[data-theme="dark"] {
+  --background: #0b0d10;
+  --foreground: #f3f4f6;
+  --surface: #111418;
+  --surface-raised: #171b21;
+  --border: #22262c;
+  --muted: #9aa1ac;
+  --faint: #6b7280;
+  --row-hover: rgba(255, 255, 255, 0.03);
+
+  --accent: #3b82f6;
+  --accent-tint: rgba(59, 130, 246, 0.12);
+
+  --good: #22c55e;
+  --good-tint: rgba(34, 197, 94, 0.12);
+  --warn: #eab308;
+  --warn-tint: rgba(234, 179, 8, 0.12);
+  --reduce: #f97316;
+  --reduce-tint: rgba(249, 115, 22, 0.12);
+  --bad: #ef4444;
+  --bad-tint: rgba(239, 68, 68, 0.12);
+}
+
+:root[data-theme="light"] {
+  --background: #f8fafc;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-raised: #f1f5f9;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+  --faint: #9ca3af;
+  --row-hover: rgba(17, 24, 39, 0.03);
+
+  --accent: #2563eb;
+  --accent-tint: rgba(37, 99, 235, 0.08);
+
+  --good: #16a34a;
+  --good-tint: rgba(22, 163, 74, 0.09);
+  --warn: #ca8a04;
+  --warn-tint: rgba(202, 138, 4, 0.09);
+  --reduce: #ea580c;
+  --reduce-tint: rgba(234, 88, 12, 0.09);
+  --bad: #dc2626;
+  --bad-tint: rgba(220, 38, 38, 0.09);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
