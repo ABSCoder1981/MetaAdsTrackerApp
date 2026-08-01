@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "playful";
+
+const OPTIONS: { value: Theme; label: string; icon: string }[] = [
+  { value: "light", label: "Bright", icon: "☀" },
+  { value: "dark", label: "Dark", icon: "🌙" },
+  { value: "playful", label: "Playful", icon: "🎨" },
+];
 
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -17,33 +23,33 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    // Reads the data-theme attribute the blocking <script> in the root
-    // layout already set from localStorage before paint — this can't be
-    // read during SSR (no document/window), so it has to happen post-mount,
-    // which is exactly what useEffect is for here (syncing from an external
-    // system, not derived state).
     const stored = document.documentElement.getAttribute("data-theme") as Theme | null;
+    const initial: Theme = stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTheme(stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+    setTheme(initial);
   }, []);
 
   if (!theme) return null;
 
-  function toggle() {
-    const next = theme === "dark" ? "light" : "dark";
-    applyTheme(next);
-    setTheme(next);
-  }
-
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={theme === "dark" ? "Switch to bright theme" : "Switch to dark theme"}
-      title={theme === "dark" ? "Switch to bright theme" : "Switch to dark theme"}
-      className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-sm"
-    >
-      {theme === "dark" ? "☀" : "🌙"}
-    </button>
+    <div role="group" aria-label="Theme" className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
+      {OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => {
+            applyTheme(opt.value);
+            setTheme(opt.value);
+          }}
+          aria-pressed={theme === opt.value}
+          title={opt.label}
+          className={`flex h-7 w-7 items-center justify-center rounded text-xs ${
+            theme === opt.value ? "bg-surface shadow-sm" : "opacity-60 hover:opacity-100"
+          }`}
+        >
+          {opt.icon}
+        </button>
+      ))}
+    </div>
   );
 }
