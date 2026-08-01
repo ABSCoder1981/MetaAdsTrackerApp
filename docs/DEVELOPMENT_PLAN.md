@@ -129,17 +129,26 @@ section(s) and its own Definition of Done.
 - **Do not build:** Creative/Audience Performance Reports, Lead Quality/Sales Funnel Report, or the custom report
   builder — all explicitly Phase 2 (Section 15).
 
-### Epic H — Team & Employee Performance (Section 9.10) — Sprint 8
-- Manager and Executive leaderboards: CPL, lead volume, alert response time.
-- Individual performance trend view for 1:1 coaching use.
-- Respects RBAC constraint: managers cannot see other managers' compensation-linked KPIs unless Director-level
-  (Section 7.3).
+### Epic H — Team & Employee Performance (Section 9.10 in PRD v1.0) — DROPPED, see Section 11 Deviation Log
+Written against v1.0's Manager/Supervisor/Executive hierarchy (per-person leaderboards, 1:1 coaching views).
+That hierarchy doesn't exist under PRD v4.0's flat org model (Section 5.1, formalized in Section 11 above) —
+there's no per-manager or per-executive scope left to leaderboard. PRD v4.0 also reassigns Section 9.10 itself
+to the Profitability Advisor (Section 12 above, already built). Sprint 8 proceeds with Export Centre only; if a
+team-performance need resurfaces later it'll be scoped fresh against whatever the org model looks like then, not
+resurrected from this v1.0 spec.
 
-### Epic I — Export Centre (Section 9.12) — Sprint 8 (parallel with H)
-- CSV/XLSX export for any filtered table view.
-- Branded PDF export for report views (workspace-logo aware — this is where white-label theming variables from
-  Section 22 first get exercised).
-- Export history/audit log (feeds Epic K).
+### Epic I — Export Centre (Section 9.12) — Sprint 8
+- **Built:** CSV export for the Campaign Monitoring table and the Properties leaderboard, respecting whatever
+  filter/sort/date-range is currently applied on screen (`components/ExportCsvButton.tsx`, `lib/export/csv.ts`).
+- **Scoped down from the PRD's "CSV/XLSX":** true binary `.xlsx` needs a writer library; the only viable npm
+  option at evaluation time (`xlsx`/SheetJS) carries two unpatched high-severity advisories (prototype pollution,
+  ReDoS — `GHSA-4r6h-8v6p-xvw6`, `GHSA-5pgg-2g8v-p4x9`). Rather than ship a known-vulnerable dependency, CSV only
+  was shipped — Excel/Sheets both open `.csv` natively, so the actual workflow (get filtered data into a
+  spreadsheet) works today. Revisit with a vetted library (e.g. `exceljs`) if a real need for native `.xlsx`
+  formatting (multiple sheets, styling) shows up.
+- **Not built:** branded PDF export (depends on the Reports Centre, Epic G, which isn't built yet either) and
+  export history/audit log (depends on Epic K, Sprint 9). Both deferred for the same reason Epic G's report
+  delivery was deferred in Section 12 above — don't build half of a dependent feature ahead of its dependency.
 
 ### Epic J — Admin & Role Management, Workspace Settings (Sections 9.13, 9.16) — Sprint 9
 - User invite/deactivate flow; role assignment per RBAC matrix.

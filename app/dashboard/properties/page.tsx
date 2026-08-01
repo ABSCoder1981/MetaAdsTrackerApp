@@ -5,8 +5,32 @@ import { resolveDateRange, RANGE_OPTIONS } from "@/lib/campaigns/dateRange";
 import { rollupByProperty } from "@/lib/analytics/propertyRollup";
 import { computeEstimatedRevenue, computeEstimatedRoiPct } from "@/lib/analytics/estimatedRoi";
 import { EstimatedValue } from "@/components/EstimatedValue";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
+import type { ExportColumn } from "@/lib/export/csv";
 import Link from "next/link";
 import { updatePropertyAssumptions, deleteProperty } from "./actions";
+
+type PropertyExportRow = {
+  name: string;
+  city: string | null;
+  campaignCount: number;
+  spend: number;
+  leads: number;
+  cpl: number | null;
+  estRevenue: number | null;
+  estRoiPct: number | null;
+};
+
+const PROPERTY_EXPORT_COLUMNS: ExportColumn<PropertyExportRow>[] = [
+  { key: "name", label: "Property" },
+  { key: "city", label: "City" },
+  { key: "campaignCount", label: "Campaigns" },
+  { key: "spend", label: "Spend" },
+  { key: "leads", label: "Leads" },
+  { key: "cpl", label: "CPL" },
+  { key: "estRevenue", label: "Est. Revenue" },
+  { key: "estRoiPct", label: "Est. ROI %" },
+];
 
 export default async function PropertiesPage({
   searchParams,
@@ -92,7 +116,8 @@ export default async function PropertiesPage({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Properties</h1>
-        <div className="flex gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm">
+          <ExportCsvButton rows={leaderboard} columns={PROPERTY_EXPORT_COLUMNS} filename="properties.csv" />
           {RANGE_OPTIONS.map((r) => (
             <Link
               key={r.key}

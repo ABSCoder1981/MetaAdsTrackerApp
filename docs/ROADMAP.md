@@ -17,7 +17,7 @@ differs.
 | 5 | Oct 12 – Oct 23, 2026 | MVP | Budget Pacing + Alerts engine (Epics D, E) | All 12 alert rules implemented and testable |
 | 6 | Oct 26 – Nov 6, 2026 | MVP | Dashboards, part 1 (Epic F) | CEO + Director dashboards live |
 | 7 | Nov 9 – Nov 20, 2026 | MVP | Dashboards, part 2 + Reports (Epics F, G) | Manager/Analyst dashboards, Daily Digest live — Supervisor/Executive dashboards dropped per PRD v4's flat org model (see `DEVELOPMENT_PLAN.md` Deviation Log) |
-| 8 | Nov 23 – Dec 4, 2026 | MVP | Team Performance + Export Centre (Epics H, I) | Leaderboards, CSV/XLSX/PDF export |
+| 8 | Nov 23 – Dec 4, 2026 | MVP | Export Centre (Epic I) — Team Performance (Epic H) dropped, flat org model has no per-manager scope to leaderboard (see `DEVELOPMENT_PLAN.md` §11, §Epic H) | CSV export live on Campaigns + Properties; XLSX/PDF/audit history deferred (see `DEVELOPMENT_PLAN.md` Epic I) |
 | 9 | Dec 7 – Dec 18, 2026 | MVP | Admin/Role Mgmt + Audit Logs (Epics J, K) | Self-serve user/ad-account onboarding |
 | 10 | Dec 21, 2026 – Jan 8, 2027* | MVP | Hardening & Acceptance | All Section 28 acceptance criteria pass |
 

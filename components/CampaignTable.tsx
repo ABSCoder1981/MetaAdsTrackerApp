@@ -5,6 +5,8 @@ import Link from "next/link";
 import { bulkTagCampaigns } from "@/app/dashboard/campaigns/actions";
 import { HEALTH_DOT_CLASS, HEALTH_LABEL, type HealthStatus } from "@/lib/campaigns/health";
 import { RECOMMENDATION_LABEL, RECOMMENDATION_CLASS, type ProfitabilityRecommendation } from "@/lib/profitability/labels";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
+import type { ExportColumn } from "@/lib/export/csv";
 
 export type CampaignRow = {
   id: string;
@@ -23,6 +25,19 @@ export type CampaignRow = {
 };
 
 type Option = { id: string; name: string };
+
+const EXPORT_COLUMNS: ExportColumn<CampaignRow>[] = [
+  { key: "name", label: "Campaign" },
+  { key: "adAccountName", label: "Account" },
+  { key: "status", label: "Status" },
+  { key: "spend", label: "Spend" },
+  { key: "impressions", label: "Impressions" },
+  { key: "leads", label: "Leads" },
+  { key: "cpl", label: "CPL" },
+  { key: "propertyName", label: "Property" },
+  { key: "city", label: "City" },
+  { key: "recommendation", label: "Recommendation" },
+];
 
 export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; properties: Option[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -64,6 +79,9 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
 
   return (
     <div>
+      <div className="mb-3 flex justify-end">
+        <ExportCsvButton rows={rows} columns={EXPORT_COLUMNS} filename="campaigns.csv" />
+      </div>
       {selected.size > 0 && (
         <form
           action={handleTagSubmit}
