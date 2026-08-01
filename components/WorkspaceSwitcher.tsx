@@ -19,7 +19,7 @@ export function WorkspaceSwitcher({
         name="workspace_id"
         defaultValue={currentWorkspaceId}
         onChange={() => formRef.current?.requestSubmit()}
-        className="rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
       >
         {workspaces.map((w) => (
           <option key={w.workspace_id} value={w.workspace_id}>
