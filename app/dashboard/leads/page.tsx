@@ -58,16 +58,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Leads</h1>
+        <h1 className="text-2xl font-bold">Leads</h1>
         <div className="flex gap-2 text-sm">
           {RANGE_OPTIONS.map((r) => (
             <Link
               key={r.key}
               href={`/dashboard/leads?range=${r.key}`}
-              className={`rounded border px-3 py-1 ${
+              className={`rounded-full border px-3 py-1 ${
                 (params.range ?? "last30") === r.key
-                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-zinc-300 dark:border-zinc-700"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted"
               }`}
             >
               {r.label}
@@ -76,15 +76,15 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-        <strong>{totalLeads}</strong> leads attributed across the top 20 campaigns in this range (from Meta&rsquo;s
-        reported conversions — see Campaign Detail for per-campaign trend).
+      <p className="mb-4 text-sm text-muted">
+        <strong className="text-foreground">{totalLeads}</strong> leads attributed across the top 20 campaigns in
+        this range (from Meta&rsquo;s reported conversions — see Campaign Detail for per-campaign trend).
       </p>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Top Campaigns by Leads</h2>
-      <div className="mb-8 overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+      <h2 className="mb-2 text-lg font-bold">Top Campaigns by Leads</h2>
+      <div className="mb-8 overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full min-w-[600px] text-left text-sm">
-          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
+          <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">Campaign</th>
               <th className="px-3 py-2">Property</th>
@@ -95,21 +95,21 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           </thead>
           <tbody>
             {byCampaign.map((c) => (
-              <tr key={c.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr key={c.id} className="border-t border-border">
                 <td className="max-w-[280px] truncate px-3 py-2 font-medium">
                   <Link href={`/dashboard/campaigns/${c.id}`} className="hover:underline">
                     {c.name}
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{c.propertyName}</td>
-                <td className="px-3 py-2 text-right">{c.leads}</td>
-                <td className="px-3 py-2 text-right">{c.spend.toFixed(0)}</td>
-                <td className="px-3 py-2 text-right">{c.cpl?.toFixed(0) ?? "—"}</td>
+                <td className="px-3 py-2 text-muted">{c.propertyName}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{c.leads}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{c.spend.toFixed(0)}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{c.cpl?.toFixed(0) ?? "—"}</td>
               </tr>
             ))}
             {byCampaign.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-zinc-500">
+                <td colSpan={5} className="px-3 py-4 text-center text-muted">
                   No leads recorded in this range yet.
                 </td>
               </tr>
@@ -118,19 +118,19 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         </table>
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Individual Leads (CRM / Landing Page)</h2>
-      <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+      <h2 className="mb-2 text-lg font-bold">Individual Leads (CRM / Landing Page)</h2>
+      <p className="mb-3 text-sm text-muted">
         Landing-page and CRM-sourced leads captured via a per-workspace webhook — see PRD Section 5.1 (dual
-        ingestion: Meta Lead Forms + landing-page leads). POST JSON <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">{`{ "meta_campaign_id" or "campaign_name", "property_name"? }`}</code> to:
+        ingestion: Meta Lead Forms + landing-page leads). POST JSON <code className="rounded bg-surface-raised px-1">{`{ "meta_campaign_id" or "campaign_name", "property_name"? }`}</code> to:
       </p>
       {webhookUrl && (
-        <p className="mb-4 break-all rounded border border-zinc-200 bg-zinc-50 p-2 font-mono text-xs dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="mb-4 break-all rounded-lg border border-border bg-surface p-2 font-mono text-xs">
           {webhookUrl}
         </p>
       )}
-      <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full min-w-[600px] text-left text-sm">
-          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
+          <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">Campaign</th>
               <th className="px-3 py-2">Property</th>
@@ -144,11 +144,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
               const campaign = Array.isArray(l.campaign) ? l.campaign[0] : l.campaign;
               const property = Array.isArray(l.property) ? l.property[0] : l.property;
               return (
-                <tr key={l.id as string} className="border-t border-zinc-100 dark:border-zinc-800">
+                <tr key={l.id as string} className="border-t border-border">
                   <td className="px-3 py-2">{(campaign as { name?: string } | null)?.name ?? "—"}</td>
                   <td className="px-3 py-2">{(property as { name?: string } | null)?.name ?? "—"}</td>
                   <td className="px-3 py-2">{l.source as string}</td>
-                  <td className="px-3 py-2">{new Date(l.created_at as string).toLocaleString()}</td>
+                  <td className="tabular-nums px-3 py-2">{new Date(l.created_at as string).toLocaleString()}</td>
                   <td className="px-3 py-2">
                     <QualityTagSelect leadId={l.id as string} currentTag={(l.quality_tag as string) ?? null} />
                   </td>
@@ -157,7 +157,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             })}
             {(individualLeads ?? []).length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-zinc-500">
+                <td colSpan={5} className="px-3 py-4 text-center text-muted">
                   No individual leads captured yet.
                 </td>
               </tr>

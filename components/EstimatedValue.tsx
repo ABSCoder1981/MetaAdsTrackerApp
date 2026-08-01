@@ -17,7 +17,7 @@ export function EstimatedValue({
   assumedAvgDealValue: number | null;
 }) {
   if (value == null) {
-    return <span className="text-zinc-400" title="Set assumed conversion rate & avg deal value for this property to compute">—</span>;
+    return <span className="text-faint" title="Set assumed conversion rate & avg deal value for this property to compute">—</span>;
   }
 
   const assumptionText =
@@ -27,9 +27,9 @@ export function EstimatedValue({
 
   return (
     <span className="group relative inline-flex cursor-help items-center gap-1">
-      <span className="text-[10px] font-medium uppercase tracking-wide text-amber-600 dark:text-amber-500">Est.</span>
-      <span>{formatter(value)}</span>
-      <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 hidden w-56 rounded bg-zinc-900 px-2 py-1 text-xs font-normal normal-case text-white group-hover:block dark:bg-zinc-700">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-warn">Est.</span>
+      <span className="tabular-nums">{formatter(value)}</span>
+      <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 hidden w-56 rounded-md bg-foreground px-2 py-1 text-xs font-normal normal-case text-background group-hover:block">
         {assumptionText} — not confirmed revenue.
       </span>
     </span>

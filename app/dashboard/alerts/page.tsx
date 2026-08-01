@@ -4,8 +4,8 @@ import { RULE_LABELS } from "@/lib/alerts/labels";
 import { acknowledgeAlert, resolveAlert, escalateAlert } from "./actions";
 
 const SEVERITY_CLASS: Record<string, string> = {
-  red: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
-  amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+  red: "bg-bad-tint text-bad",
+  amber: "bg-warn-tint text-warn",
 };
 
 export default async function AlertsPage({
@@ -30,7 +30,7 @@ export default async function AlertsPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Alerts</h1>
+        <h1 className="text-2xl font-bold">Alerts</h1>
         <div className="flex gap-2 text-sm">
           {[
             { key: "active", label: "Active" },
@@ -40,10 +40,10 @@ export default async function AlertsPage({
             <Link
               key={s.key}
               href={`/dashboard/alerts?status=${s.key}`}
-              className={`rounded border px-3 py-1 ${
+              className={`rounded-full border px-3 py-1 ${
                 statusFilter === s.key
-                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-zinc-300 dark:border-zinc-700"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted"
               }`}
             >
               {s.label}
@@ -59,18 +59,18 @@ export default async function AlertsPage({
           return (
             <div
               key={a.id as string}
-              className="flex items-center justify-between rounded border border-zinc-200 p-3 text-sm dark:border-zinc-800"
+              className="flex items-center justify-between rounded-lg border border-border bg-surface p-3 text-sm"
             >
               <div>
                 <div className="mb-1 flex items-center gap-2">
                   <span
-                    className={`rounded px-1.5 py-0.5 text-xs font-medium uppercase ${SEVERITY_CLASS[a.severity as string]}`}
+                    className={`rounded px-1.5 py-0.5 text-[11px] font-bold uppercase ${SEVERITY_CLASS[a.severity as string]}`}
                   >
                     {a.severity as string}
                   </span>
                   <span className="font-medium">{RULE_LABELS[a.rule_key as string] ?? (a.rule_key as string)}</span>
                 </div>
-                <p className="text-zinc-600 dark:text-zinc-400">
+                <p className="text-muted">
                   {(campaign as { name?: string } | null)?.name ?? (adAccount as { name?: string } | null)?.name ?? "—"}
                   {" · "}
                   {new Date(a.triggered_at as string).toLocaleString()}
@@ -82,7 +82,7 @@ export default async function AlertsPage({
                 {a.status === "open" && (
                   <form action={acknowledgeAlert}>
                     <input type="hidden" name="alert_id" value={a.id as string} />
-                    <button type="submit" className="rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700">
+                    <button type="submit" className="rounded-md border border-border px-2 py-1 text-xs">
                       Acknowledge
                     </button>
                   </form>
@@ -91,13 +91,13 @@ export default async function AlertsPage({
                   <>
                     <form action={resolveAlert}>
                       <input type="hidden" name="alert_id" value={a.id as string} />
-                      <button type="submit" className="rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700">
+                      <button type="submit" className="rounded-md border border-border px-2 py-1 text-xs">
                         Resolve
                       </button>
                     </form>
                     <form action={escalateAlert}>
                       <input type="hidden" name="alert_id" value={a.id as string} />
-                      <button type="submit" className="rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700">
+                      <button type="submit" className="rounded-md border border-border px-2 py-1 text-xs">
                         Escalate
                       </button>
                     </form>
@@ -107,7 +107,7 @@ export default async function AlertsPage({
             </div>
           );
         })}
-        {(alerts ?? []).length === 0 && <p className="text-sm text-zinc-500">No alerts in this view.</p>}
+        {(alerts ?? []).length === 0 && <p className="text-sm text-muted">No alerts in this view.</p>}
       </div>
     </div>
   );

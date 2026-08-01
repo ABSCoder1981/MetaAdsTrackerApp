@@ -113,9 +113,9 @@ export default async function CampaignsPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Campaigns</h1>
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
-          Tagging completeness: <strong>{completenessPct}%</strong> ({taggedCount ?? 0}/{totalCampaignCount ?? 0})
+        <h1 className="text-2xl font-bold">Campaigns</h1>
+        <span className="text-sm text-muted">
+          Tagging completeness: <strong className="text-foreground">{completenessPct}%</strong> ({taggedCount ?? 0}/{totalCampaignCount ?? 0})
         </span>
       </div>
 
@@ -124,10 +124,10 @@ export default async function CampaignsPage({
           <Link
             key={r.key}
             href={`/dashboard/campaigns?range=${r.key}`}
-            className={`rounded border px-3 py-1 ${
+            className={`rounded-full border px-3 py-1 ${
               (params.range ?? "last7") === r.key
-                ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                : "border-zinc-300 dark:border-zinc-700"
+                ? "border-foreground bg-foreground text-background"
+                : "border-border text-muted"
             }`}
           >
             {r.label}
@@ -140,29 +140,29 @@ export default async function CampaignsPage({
             name="q"
             defaultValue={params.q}
             placeholder="Search campaigns…"
-            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            className="rounded-md border border-border bg-surface px-2 py-1 text-foreground"
           />
-          <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
+          <button type="submit" className="rounded-md border border-border px-3 py-1">
             Search
           </button>
         </form>
       </div>
 
       {totalCount === 0 && (params.q || params.status) && (
-        <p className="mb-4 text-sm text-zinc-500">No campaigns match this search/filter.</p>
+        <p className="mb-4 text-sm text-muted">No campaigns match this search/filter.</p>
       )}
 
       <CampaignTable rows={rows} properties={properties ?? []} />
 
       <div className="mt-4 flex items-center justify-between text-sm">
-        <span className="text-zinc-600 dark:text-zinc-400">
+        <span className="text-muted">
           Page {page} of {totalPages} ({totalCount} campaigns)
         </span>
         <div className="flex gap-2">
           {page > 1 && (
             <Link
               href={`/dashboard/campaigns?range=${params.range ?? "last7"}&page=${page - 1}`}
-              className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700"
+              className="rounded-md border border-border px-3 py-1"
             >
               Previous
             </Link>
@@ -170,7 +170,7 @@ export default async function CampaignsPage({
           {page < totalPages && (
             <Link
               href={`/dashboard/campaigns?range=${params.range ?? "last7"}&page=${page + 1}`}
-              className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700"
+              className="rounded-md border border-border px-3 py-1"
             >
               Next
             </Link>
@@ -178,12 +178,12 @@ export default async function CampaignsPage({
         </div>
       </div>
 
-      <details className="mt-8 rounded border border-zinc-200 p-4 dark:border-zinc-800">
+      <details className="mt-8 rounded-lg border border-border bg-surface p-4">
         <summary className="cursor-pointer text-sm font-medium">Add Property manually</summary>
         <form action={createProperty} className="mt-3 max-w-sm space-y-2">
-          <input name="name" required placeholder="Property name" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
-          <input name="city" placeholder="City (optional)" className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
-          <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black">
+          <input name="name" required placeholder="Property name" className="w-full rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground" />
+          <input name="city" placeholder="City (optional)" className="w-full rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground" />
+          <button type="submit" className="rounded-md bg-foreground px-3 py-1 text-sm text-background">
             Add Property
           </button>
         </form>

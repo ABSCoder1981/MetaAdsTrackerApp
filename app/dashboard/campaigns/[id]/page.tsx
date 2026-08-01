@@ -100,9 +100,9 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
   const PACING_LABEL: Record<string, string> = { ahead: "Ahead of pace", on_track: "On track", behind: "Behind pace" };
   const PACING_CLASS: Record<string, string> = {
-    ahead: "text-amber-600",
-    on_track: "text-emerald-600",
-    behind: "text-amber-600",
+    ahead: "text-warn",
+    on_track: "text-good",
+    behind: "text-warn",
   };
 
   // Profitability Advisor (Section 9.10) — latest evaluation snapshot.
@@ -144,124 +144,124 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="max-w-4xl">
-      <Link href="/dashboard/campaigns" className="text-sm text-zinc-500 underline">
+      <Link href="/dashboard/campaigns" className="text-sm text-muted hover:text-accent">
         ← Campaigns
       </Link>
-      <h1 className="mb-1 mt-2 text-2xl font-semibold text-black dark:text-zinc-50">{campaign.name}</h1>
-      <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
+      <h1 className="mb-1 mt-2 text-2xl font-bold">{campaign.name}</h1>
+      <p className="mb-6 text-sm text-muted">
         {(adAccount as { name?: string } | null)?.name ?? "—"} · {campaign.status ?? "—"} · {campaign.objective ?? "—"} ·
         Property: {(property as { name?: string } | null)?.name ?? "unset"}
       </p>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Trend (last 30 days)</h2>
+      <h2 className="mb-2 text-lg font-bold">Trend (last 30 days)</h2>
       <div className="mb-8">
         <CampaignTrendChart data={chartData} />
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Comparison</h2>
+      <h2 className="mb-2 text-lg font-bold">Comparison</h2>
       <div className="mb-8">
         <DeltaToggle dod={dod} wow={wow} />
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Budget & Pacing</h2>
+      <h2 className="mb-2 text-lg font-bold">Budget & Pacing</h2>
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {!hasBudgetData && (
-          <p className="col-span-full text-sm text-zinc-500">No budget set on this campaign in Meta.</p>
+          <p className="col-span-full text-sm text-muted">No budget set on this campaign in Meta.</p>
         )}
         {lifetimeBudget != null && (
-          <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-            <p className="text-xs uppercase text-zinc-500">Lifetime Budget</p>
-            <p className="text-lg font-semibold">{lifetimeBudget.toFixed(0)}</p>
+          <div className="rounded-lg border border-border bg-surface p-3">
+            <p className="text-[11px] text-muted">Lifetime Budget</p>
+            <p className="tabular-nums text-lg font-bold">{lifetimeBudget.toFixed(0)}</p>
           </div>
         )}
         {dailyBudget != null && (
-          <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-            <p className="text-xs uppercase text-zinc-500">Daily Budget</p>
-            <p className="text-lg font-semibold">{dailyBudget.toFixed(0)}</p>
+          <div className="rounded-lg border border-border bg-surface p-3">
+            <p className="text-[11px] text-muted">Daily Budget</p>
+            <p className="tabular-nums text-lg font-bold">{dailyBudget.toFixed(0)}</p>
           </div>
         )}
         {utilizationPct != null && (
-          <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-            <p className="text-xs uppercase text-zinc-500">Utilization</p>
-            <p className="text-lg font-semibold">{utilizationPct.toFixed(0)}%</p>
+          <div className="rounded-lg border border-border bg-surface p-3">
+            <p className="text-[11px] text-muted">Utilization</p>
+            <p className="tabular-nums text-lg font-bold">{utilizationPct.toFixed(0)}%</p>
           </div>
         )}
         {daysUntilExhaustion != null && (
-          <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-            <p className="text-xs uppercase text-zinc-500">Days to Exhaustion</p>
-            <p className="text-lg font-semibold">{daysUntilExhaustion.toFixed(0)}</p>
+          <div className="rounded-lg border border-border bg-surface p-3">
+            <p className="text-[11px] text-muted">Days to Exhaustion</p>
+            <p className="tabular-nums text-lg font-bold">{daysUntilExhaustion.toFixed(0)}</p>
           </div>
         )}
         {hasBudgetData && (
-          <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-            <p className="text-xs uppercase text-zinc-500">Pacing</p>
-            <p className={`text-lg font-semibold ${PACING_CLASS[pacingStatus]}`}>{PACING_LABEL[pacingStatus]}</p>
+          <div className="rounded-lg border border-border bg-surface p-3">
+            <p className="text-[11px] text-muted">Pacing</p>
+            <p className={`text-lg font-bold ${PACING_CLASS[pacingStatus]}`}>{PACING_LABEL[pacingStatus]}</p>
           </div>
         )}
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Profitability & Recommendation</h2>
+      <h2 className="mb-2 text-lg font-bold">Profitability & Recommendation</h2>
       <div className="mb-8">
         {!latestProfitability ? (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             No verdict yet — needs a Property tag with assumed conversion rate / avg deal value configured (see
             Properties page), plus enough spend to clear the workspace&rsquo;s minimum-spend eligibility threshold.
           </p>
         ) : (
-          <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="rounded-lg border border-border bg-surface p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="rounded bg-zinc-100 px-2 py-1 text-xs font-medium dark:bg-zinc-800">
+              <span className="rounded bg-surface-raised px-2 py-1 text-xs font-medium">
                 {CLASSIFICATION_LABEL[latestProfitability.classification as ProfitabilityClassification]}
               </span>
               <span
-                className={`rounded px-2 py-1 text-xs font-medium ${RECOMMENDATION_CLASS[latestProfitability.recommendation as ProfitabilityRecommendation]}`}
+                className={`rounded px-2 py-1 text-xs font-bold ${RECOMMENDATION_CLASS[latestProfitability.recommendation as ProfitabilityRecommendation]}`}
               >
                 {RECOMMENDATION_LABEL[latestProfitability.recommendation as ProfitabilityRecommendation]}
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-faint">
                 Evaluated {new Date(latestProfitability.evaluated_at).toLocaleString()}
               </span>
             </div>
-            <p className="mb-4 text-sm text-zinc-700 dark:text-zinc-300">{latestProfitability.reason}</p>
+            <p className="mb-4 text-sm text-foreground">{latestProfitability.reason}</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>
-                <p className="text-xs uppercase text-zinc-500">Spend to date</p>
-                <p className="font-semibold">{Number(latestProfitability.spend_to_date).toFixed(0)}</p>
+                <p className="text-[11px] text-muted">Spend to date</p>
+                <p className="tabular-nums font-bold">{Number(latestProfitability.spend_to_date).toFixed(0)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-zinc-500">Est. Revenue</p>
-                <p className="font-semibold">{Number(latestProfitability.estimated_revenue).toFixed(0)}</p>
+                <p className="text-[11px] text-muted">Est. Revenue</p>
+                <p className="tabular-nums font-bold">{Number(latestProfitability.estimated_revenue).toFixed(0)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-zinc-500">Est. Profit/Loss</p>
-                <p className={`font-semibold ${Number(latestProfitability.estimated_profit_loss) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <p className="text-[11px] text-muted">Est. Profit/Loss</p>
+                <p className={`tabular-nums font-bold ${Number(latestProfitability.estimated_profit_loss) >= 0 ? "text-good" : "text-bad"}`}>
                   {Number(latestProfitability.estimated_profit_loss).toFixed(0)}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase text-zinc-500">Days below break-even</p>
-                <p className="font-semibold">{latestProfitability.days_below_break_even}</p>
+                <p className="text-[11px] text-muted">Days below break-even</p>
+                <p className="tabular-nums font-bold">{latestProfitability.days_below_break_even}</p>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Ad Sets & Ads</h2>
-      {liveDataError && <p className="mb-4 text-sm text-amber-600">{liveDataError}</p>}
+      <h2 className="mb-2 text-lg font-bold">Ad Sets & Ads</h2>
+      {liveDataError && <p className="mb-4 text-sm text-warn">{liveDataError}</p>}
       {!liveDataError && adSets.length === 0 && ads.length === 0 && (
-        <p className="mb-8 text-sm text-zinc-500">No ad sets found for this campaign.</p>
+        <p className="mb-8 text-sm text-muted">No ad sets found for this campaign.</p>
       )}
       {ads.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           {ads.map((ad) => (
-            <div key={ad.id} className="rounded border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+            <div key={ad.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
               {ad.creative?.thumbnail_url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={ad.creative.thumbnail_url} alt={ad.creative.title ?? ad.name} className="mb-2 w-full rounded" />
+                <img src={ad.creative.thumbnail_url} alt={ad.creative.title ?? ad.name} className="mb-2 w-full rounded-md" />
               )}
               <p className="truncate font-medium">{ad.name}</p>
-              <p className="text-xs text-zinc-500">{ad.status}</p>
+              <p className="text-xs text-muted">{ad.status}</p>
             </div>
           ))}
         </div>

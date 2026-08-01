@@ -27,7 +27,7 @@ export function ExportCsvButton<T>({
       type="button"
       onClick={handleExport}
       disabled={rows.length === 0}
-      className="rounded border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
+      className="rounded-md border border-border px-3 py-1 text-sm disabled:opacity-50"
     >
       Export CSV
     </button>

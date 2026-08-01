@@ -18,10 +18,10 @@ function DeltaCard({ title, current, previous, formatter }: { title: string; cur
   const delta = pctDelta(current, previous);
   const isUp = current >= previous;
   return (
-    <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-      <p className="text-xs uppercase text-zinc-500">{title}</p>
-      <p className="text-lg font-semibold text-black dark:text-zinc-50">{formatter(current)}</p>
-      <p className={`text-xs ${isUp ? "text-emerald-600" : "text-red-600"}`}>{delta} vs previous period</p>
+    <div className="rounded-lg border border-border bg-surface p-3">
+      <p className="text-[11px] text-muted">{title}</p>
+      <p className="tabular-nums text-lg font-bold">{formatter(current)}</p>
+      <p className={`text-xs font-bold ${isUp ? "text-good" : "text-bad"}`}>{delta} vs previous period</p>
     </div>
   );
 }
@@ -35,13 +35,13 @@ export function DeltaToggle({ dod, wow }: { dod: DeltaSet; wow: DeltaSet }) {
       <div className="mb-2 flex gap-2 text-sm">
         <button
           onClick={() => setMode("dod")}
-          className={`rounded border px-3 py-1 ${mode === "dod" ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black" : "border-zinc-300 dark:border-zinc-700"}`}
+          className={`rounded-full border px-3 py-1 ${mode === "dod" ? "border-foreground bg-foreground text-background" : "border-border text-muted"}`}
         >
           Day over Day
         </button>
         <button
           onClick={() => setMode("wow")}
-          className={`rounded border px-3 py-1 ${mode === "wow" ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black" : "border-zinc-300 dark:border-zinc-700"}`}
+          className={`rounded-full border px-3 py-1 ${mode === "wow" ? "border-foreground bg-foreground text-background" : "border-border text-muted"}`}
         >
           Week over Week
         </button>

@@ -16,102 +16,102 @@ export default async function AdAccountsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-4 text-2xl font-semibold text-black dark:text-zinc-50">Ad Accounts</h1>
+      <h1 className="mb-4 text-2xl font-bold">Ad Accounts</h1>
 
       <div className="mb-8 space-y-3">
         {(adAccounts ?? []).length === 0 && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">No ad accounts connected yet.</p>
+          <p className="text-sm text-muted">No ad accounts connected yet.</p>
         )}
         {(adAccounts ?? []).map((a) => (
           <div
             key={a.id}
-            className="rounded border border-zinc-200 p-4 dark:border-zinc-800"
+            className="rounded-lg border border-border bg-surface p-4"
           >
             <div className="mb-2 flex items-center justify-between">
               <div>
-                <p className="font-medium text-black dark:text-zinc-50">{a.name}</p>
-                <p className="text-xs text-zinc-500">
+                <p className="font-medium">{a.name}</p>
+                <p className="text-xs text-faint">
                   {a.meta_ad_account_id} · {a.currency}
                 </p>
               </div>
               <SyncNowButton adAccountId={a.id} />
             </div>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+            <p className="text-xs text-muted">
               Last synced: {a.last_synced_at ? new Date(a.last_synced_at).toLocaleString() : "never"} — status:{" "}
               <span
                 className={
                   a.last_sync_status === "success"
-                    ? "text-emerald-600"
+                    ? "text-good"
                     : a.last_sync_status === "error"
-                      ? "text-red-600"
-                      : "text-zinc-500"
+                      ? "text-bad"
+                      : "text-faint"
                 }
               >
                 {a.last_sync_status}
               </span>
             </p>
-            {a.last_sync_error && <p className="text-xs text-red-600">{a.last_sync_error}</p>}
+            {a.last_sync_error && <p className="text-xs text-bad">{a.last_sync_error}</p>}
           </div>
         ))}
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Connect an Ad Account</h2>
-      <form action={connectAdAccount} className="space-y-3 rounded border border-zinc-200 p-4 dark:border-zinc-800">
+      <h2 className="mb-2 text-lg font-bold">Connect an Ad Account</h2>
+      <form action={connectAdAccount} className="space-y-3 rounded-lg border border-border bg-surface p-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Business Manager ID
           </label>
           <input
             name="meta_bm_id"
             required
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Ad Account ID (act_XXXXXXXXXX)
           </label>
           <input
             name="meta_ad_account_id"
             required
             placeholder="act_1234567890"
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Display name</label>
+          <label className="mb-1 block text-sm font-medium text-foreground">Display name</label>
           <input
             name="name"
             required
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Currency</label>
+          <label className="mb-1 block text-sm font-medium text-foreground">Currency</label>
           <input
             name="currency"
             defaultValue="USD"
             required
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             System User access token
           </label>
           <input
             name="system_user_token"
             type="password"
             required
-            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-faint">
             Stored encrypted via Supabase Vault — never written to a plain column.
           </p>
         </div>
         <button
           type="submit"
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background"
         >
           Connect
         </button>

@@ -13,7 +13,7 @@ export function QualityTagSelect({ leadId, currentTag }: { leadId: string; curre
         name="quality_tag"
         defaultValue={currentTag ?? ""}
         onChange={() => formRef.current?.requestSubmit()}
-        className="rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="rounded-md border border-border bg-background px-1 py-0.5 text-xs text-foreground"
       >
         <option value="">Untagged</option>
         <option value="hot">Hot</option>

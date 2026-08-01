@@ -31,11 +31,11 @@ export function SyncNowButton({ adAccountId }: { adAccountId: string }) {
       <button
         onClick={handleClick}
         disabled={isPending}
-        className="rounded border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
+        className="rounded-md border border-border px-3 py-1 text-sm disabled:opacity-50"
       >
         {isPending ? "Syncing…" : "Sync now"}
       </button>
-      {result && <p className="text-xs text-zinc-600 dark:text-zinc-400">{result}</p>}
+      {result && <p className="text-xs text-muted">{result}</p>}
     </div>
   );
 }

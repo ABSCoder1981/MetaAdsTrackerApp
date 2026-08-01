@@ -115,17 +115,17 @@ export default async function PropertiesPage({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Properties</h1>
+        <h1 className="text-2xl font-bold">Properties</h1>
         <div className="flex items-center gap-2 text-sm">
           <ExportCsvButton rows={leaderboard} columns={PROPERTY_EXPORT_COLUMNS} filename="properties.csv" />
           {RANGE_OPTIONS.map((r) => (
             <Link
               key={r.key}
               href={`/dashboard/properties?range=${r.key}`}
-              className={`rounded border px-3 py-1 ${
+              className={`rounded-full border px-3 py-1 ${
                 (params.range ?? "last30") === r.key
-                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-zinc-300 dark:border-zinc-700"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted"
               }`}
             >
               {r.label}
@@ -136,18 +136,18 @@ export default async function PropertiesPage({
 
       {compareRows.length > 0 && (
         <div className="mb-8">
-          <h2 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">Comparison</h2>
+          <h2 className="mb-2 text-lg font-bold">Comparison</h2>
           <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${compareRows.length}, minmax(0, 1fr))` }}>
             {compareRows.map((r) => (
-              <div key={r.propertyId} className="rounded border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+              <div key={r.propertyId} className="rounded-lg border border-border bg-surface p-3 text-sm">
                 <p className="font-medium">{r.name}</p>
-                <p className="text-xs text-zinc-500">{r.city ?? "—"}</p>
+                <p className="text-xs text-muted">{r.city ?? "—"}</p>
                 <dl className="mt-2 space-y-1">
-                  <div className="flex justify-between"><dt className="text-zinc-500">Spend</dt><dd>{r.spend.toFixed(0)}</dd></div>
-                  <div className="flex justify-between"><dt className="text-zinc-500">Leads</dt><dd>{r.leads}</dd></div>
-                  <div className="flex justify-between"><dt className="text-zinc-500">CPL</dt><dd>{r.cpl?.toFixed(0) ?? "—"}</dd></div>
+                  <div className="flex justify-between"><dt className="text-muted">Spend</dt><dd className="tabular-nums">{r.spend.toFixed(0)}</dd></div>
+                  <div className="flex justify-between"><dt className="text-muted">Leads</dt><dd className="tabular-nums">{r.leads}</dd></div>
+                  <div className="flex justify-between"><dt className="text-muted">CPL</dt><dd className="tabular-nums">{r.cpl?.toFixed(0) ?? "—"}</dd></div>
                   <div className="flex justify-between">
-                    <dt className="text-zinc-500">Est. ROI</dt>
+                    <dt className="text-muted">Est. ROI</dt>
                     <dd>
                       <EstimatedValue
                         value={r.estRoiPct}
@@ -164,9 +164,9 @@ export default async function PropertiesPage({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
+          <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">Compare</th>
               <th className="px-3 py-2">Property</th>
@@ -182,23 +182,23 @@ export default async function PropertiesPage({
           </thead>
           <tbody>
             {leaderboard.map((r) => (
-              <tr key={r.propertyId} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr key={r.propertyId} className="border-t border-border">
                 <td className="px-3 py-2">
                   <Link
                     href={`/dashboard/properties?range=${params.range ?? "last30"}&compare=${[...compareIds, r.propertyId].join(",")}`}
-                    className="text-xs underline"
+                    className="text-xs text-accent hover:underline"
                   >
                     Add
                   </Link>
                 </td>
                 <td className="px-3 py-2 font-medium">
-                  {r.name} {r.city && <span className="text-xs text-zinc-500">({r.city})</span>}
+                  {r.name} {r.city && <span className="text-xs text-muted">({r.city})</span>}
                 </td>
-                <td className="px-3 py-2 text-right">{r.campaignCount}</td>
-                <td className="px-3 py-2 text-right">{r.spend.toFixed(0)}</td>
-                <td className="px-3 py-2 text-right">{r.leads}</td>
-                <td className="px-3 py-2 text-right">{r.cpl?.toFixed(0) ?? "—"}</td>
-                <td className="px-3 py-2 text-right">
+                <td className="tabular-nums px-3 py-2 text-right">{r.campaignCount}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.spend.toFixed(0)}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.leads}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.cpl?.toFixed(0) ?? "—"}</td>
+                <td className="tabular-nums px-3 py-2 text-right">
                   <EstimatedValue
                     value={r.estRevenue}
                     formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -206,7 +206,7 @@ export default async function PropertiesPage({
                     assumedAvgDealValue={r.assumedAvgDealValue}
                   />
                 </td>
-                <td className="px-3 py-2 text-right">
+                <td className="tabular-nums px-3 py-2 text-right">
                   <EstimatedValue
                     value={r.estRoiPct}
                     formatter={(v) => `${v.toFixed(0)}%`}
@@ -223,16 +223,16 @@ export default async function PropertiesPage({
                       step="0.1"
                       defaultValue={r.assumedConversionRate ?? ""}
                       placeholder="Conv %"
-                      className="w-16 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                      className="w-16 rounded-md border border-border bg-background px-1 py-0.5 text-xs text-foreground"
                     />
                     <input
                       name="assumed_avg_deal_value"
                       type="number"
                       defaultValue={r.assumedAvgDealValue ?? ""}
                       placeholder="Deal ₹"
-                      className="w-24 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                      className="w-24 rounded-md border border-border bg-background px-1 py-0.5 text-xs text-foreground"
                     />
-                    <button type="submit" className="rounded border border-zinc-300 px-2 py-0.5 text-xs dark:border-zinc-700">
+                    <button type="submit" className="rounded-md border border-border px-2 py-0.5 text-xs">
                       Save
                     </button>
                   </form>
@@ -241,12 +241,12 @@ export default async function PropertiesPage({
                   {r.campaignCount === 0 ? (
                     <form action={deleteProperty}>
                       <input type="hidden" name="property_id" value={r.propertyId} />
-                      <button type="submit" className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 dark:border-red-800">
+                      <button type="submit" className="rounded-md border border-bad px-2 py-0.5 text-xs text-bad">
                         Delete
                       </button>
                     </form>
                   ) : (
-                    <span className="text-xs text-zinc-400" title="Untag its campaigns first (Campaigns page)">
+                    <span className="text-xs text-faint" title="Untag its campaigns first (Campaigns page)">
                       in use
                     </span>
                   )}
@@ -255,23 +255,23 @@ export default async function PropertiesPage({
             ))}
             {leaderboard.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-3 py-4 text-center text-zinc-500">
+                <td colSpan={9} className="px-3 py-4 text-center text-muted">
                   No properties yet — add one from the Campaigns page.
                 </td>
               </tr>
             )}
             {untaggedRollup && (
-              <tr className="border-t border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <tr className="border-t border-border bg-surface-raised">
                 <td className="px-3 py-2" />
-                <td className="px-3 py-2 font-medium text-zinc-500">Untagged campaigns</td>
-                <td className="px-3 py-2 text-right text-zinc-500">—</td>
-                <td className="px-3 py-2 text-right">{untaggedRollup.spend.toFixed(0)}</td>
-                <td className="px-3 py-2 text-right">{untaggedRollup.leads}</td>
-                <td className="px-3 py-2 text-right">{untaggedRollup.cpl?.toFixed(0) ?? "—"}</td>
-                <td className="px-3 py-2 text-right text-zinc-400">n/a</td>
-                <td className="px-3 py-2 text-right text-zinc-400">n/a</td>
-                <td className="px-3 py-2 text-xs text-zinc-400">n/a</td>
-                <td className="px-3 py-2 text-xs text-zinc-400">n/a</td>
+                <td className="px-3 py-2 font-medium text-muted">Untagged campaigns</td>
+                <td className="px-3 py-2 text-right text-muted">—</td>
+                <td className="tabular-nums px-3 py-2 text-right">{untaggedRollup.spend.toFixed(0)}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{untaggedRollup.leads}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{untaggedRollup.cpl?.toFixed(0) ?? "—"}</td>
+                <td className="px-3 py-2 text-right text-faint">n/a</td>
+                <td className="px-3 py-2 text-right text-faint">n/a</td>
+                <td className="px-3 py-2 text-xs text-faint">n/a</td>
+                <td className="px-3 py-2 text-xs text-faint">n/a</td>
               </tr>
             )}
           </tbody>

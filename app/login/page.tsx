@@ -41,39 +41,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
+    <div className="flex flex-1 items-center justify-center bg-background px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+        className="w-full max-w-sm rounded-lg border border-border bg-surface p-8"
       >
-        <h1 className="mb-1 text-xl font-semibold text-black dark:text-zinc-50">
-          Meta Ads Campaign Performance Tracker
-        </h1>
-        <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
+        <div className="mb-5 flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-tint text-sm text-accent">
+            ◧
+          </span>
+          <span className="text-sm font-bold">Ads Tracker</span>
+        </div>
+        <h1 className="mb-1 text-xl font-bold">Meta Ads Campaign Performance Tracker</h1>
+        <p className="mb-6 text-sm text-muted">
           {mode === "sign-in" ? "Sign in to your workspace." : "Create an account to get started."}
         </p>
 
-        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
+        <label className="mb-1 block text-sm font-medium text-foreground">Email</label>
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="mb-4 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
 
-        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
+        <label className="mb-1 block text-sm font-medium text-foreground">Password</label>
         <input
           type="password"
           required
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-6 w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="mb-6 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
 
         {status && (
-          <p className="mb-4 text-sm text-amber-700 dark:text-amber-400" role="status">
+          <p className="mb-4 rounded-md bg-warn-tint px-3 py-2 text-sm text-warn" role="status">
             {status}
           </p>
         )}
@@ -81,7 +85,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="mb-3 w-full rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="mb-3 w-full rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-50"
         >
           {loading ? "Please wait…" : mode === "sign-in" ? "Sign in" : "Sign up"}
         </button>
@@ -89,7 +93,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
-          className="w-full text-center text-sm text-zinc-600 underline dark:text-zinc-400"
+          className="w-full text-center text-sm text-muted hover:text-accent"
         >
           {mode === "sign-in" ? "Need an account? Sign up" : "Already have an account? Sign in"}
         </button>

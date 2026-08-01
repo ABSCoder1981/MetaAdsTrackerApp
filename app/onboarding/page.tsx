@@ -20,28 +20,34 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
+    <div className="flex flex-1 items-center justify-center bg-background px-4">
       <form
         action={createWorkspace}
-        className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+        className="w-full max-w-sm rounded-lg border border-border bg-surface p-8"
       >
-        <h1 className="mb-1 text-xl font-semibold text-black dark:text-zinc-50">Create your workspace</h1>
-        <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
+        <div className="mb-5 flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-tint text-sm text-accent">
+            ◧
+          </span>
+          <span className="text-sm font-bold">Ads Tracker</span>
+        </div>
+        <h1 className="mb-1 text-xl font-bold">Create your workspace</h1>
+        <p className="mb-6 text-sm text-muted">
           A workspace is the tenancy boundary for your ad accounts, campaigns, and team — see{" "}
-          <code className="rounded bg-zinc-200 px-1 py-0.5 dark:bg-zinc-800">docs/ARCHITECTURE.md</code>.
+          <code className="rounded bg-surface-raised px-1 py-0.5">docs/ARCHITECTURE.md</code>.
         </p>
 
-        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Workspace name</label>
+        <label className="mb-1 block text-sm font-medium text-foreground">Workspace name</label>
         <input
           name="name"
           required
           placeholder="e.g. Ashiyana Real Estate"
-          className="mb-6 w-full rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="mb-6 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
 
         <button
           type="submit"
-          className="w-full rounded bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="w-full rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background"
         >
           Create workspace
         </button>
