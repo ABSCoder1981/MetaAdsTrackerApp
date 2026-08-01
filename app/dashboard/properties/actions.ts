@@ -23,3 +23,29 @@ export async function updatePropertyAssumptions(formData: FormData) {
 
   revalidatePath("/dashboard/properties");
 }
+
+export async function deleteProperty(formData: FormData) {
+  const supabase = await createClient();
+  const propertyId = String(formData.get("property_id") ?? "");
+  if (!propertyId) throw new Error("Missing property");
+
+  // Refuse rather than cascade — `campaign.property_id` has no ON DELETE
+  // clause (defaults to RESTRICT), and even if it did, silently untagging
+  // campaigns as a side effect of "delete property" would be surprising.
+  const { count, error: countErr } = await supabase
+    .from("campaign")
+    .select("id", { count: "exact", head: true })
+    .eq("property_id", propertyId);
+  if (countErr) throw new Error(countErr.message);
+  if (count && count > 0) {
+    throw new Error(
+      `Cannot delete — ${count} campaign(s) are still tagged to this property. Untag them from the Campaigns page first.`
+    );
+  }
+
+  const { error } = await supabase.from("property").delete().eq("id", propertyId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/campaigns");
+}

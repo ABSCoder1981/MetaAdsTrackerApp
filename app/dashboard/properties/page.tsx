@@ -6,7 +6,7 @@ import { rollupByProperty } from "@/lib/analytics/propertyRollup";
 import { computeEstimatedRevenue, computeEstimatedRoiPct } from "@/lib/analytics/estimatedRoi";
 import { EstimatedValue } from "@/components/EstimatedValue";
 import Link from "next/link";
-import { updatePropertyAssumptions } from "./actions";
+import { updatePropertyAssumptions, deleteProperty } from "./actions";
 
 export default async function PropertiesPage({
   searchParams,
@@ -43,28 +43,50 @@ export default async function PropertiesPage({
     (campaigns ?? []).map((c) => ({ id: c.id, propertyId: c.property_id })),
     metricsByCampaign
   );
+  const rollupByPropertyId = new Map(rollups.filter((r) => r.propertyId).map((r) => [r.propertyId!, r]));
 
-  const propertyById = new Map((properties ?? []).map((p) => [p.id, p]));
+  // Campaign count per property, independent of the selected date range —
+  // this is what gates whether Delete is safe to offer (PRD RBAC doesn't
+  // grant broad delete rights, and silently cascading a delete into
+  // untagging campaigns would be a surprising, hard-to-notice data loss).
+  const campaignCountByProperty = new Map<string, number>();
+  for (const c of campaigns ?? []) {
+    if (!c.property_id) continue;
+    campaignCountByProperty.set(c.property_id, (campaignCountByProperty.get(c.property_id) ?? 0) + 1);
+  }
 
-  const leaderboard = rollups
-    .map((r) => {
-      const prop = r.propertyId ? propertyById.get(r.propertyId) : null;
-      const estRevenue = computeEstimatedRevenue(r.leads, prop?.assumed_conversion_rate ?? null, prop?.assumed_avg_deal_value ?? null);
-      const estRoiPct = computeEstimatedRoiPct(r.spend, estRevenue);
+  // Every property shows up here now, even ones with zero campaigns tagged
+  // yet — previously this page only rendered rows the campaign rollup
+  // produced, so a freshly created property was invisible until something
+  // was tagged to it.
+  const leaderboard = (properties ?? [])
+    .map((prop) => {
+      const r = rollupByPropertyId.get(prop.id);
+      const spend = r?.spend ?? 0;
+      const leads = r?.leads ?? 0;
+      const cpl = r?.cpl ?? null;
+      const estRevenue = computeEstimatedRevenue(leads, prop.assumed_conversion_rate, prop.assumed_avg_deal_value);
+      const estRoiPct = computeEstimatedRoiPct(spend, estRevenue);
       return {
-        ...r,
-        name: prop?.name ?? "Untagged",
-        city: prop?.city ?? null,
-        assumedConversionRate: prop?.assumed_conversion_rate ?? null,
-        assumedAvgDealValue: prop?.assumed_avg_deal_value ?? null,
+        propertyId: prop.id,
+        name: prop.name,
+        city: prop.city,
+        assumedConversionRate: prop.assumed_conversion_rate,
+        assumedAvgDealValue: prop.assumed_avg_deal_value,
+        spend,
+        leads,
+        cpl,
         estRevenue,
         estRoiPct,
+        campaignCount: campaignCountByProperty.get(prop.id) ?? 0,
       };
     })
     .sort((a, b) => b.spend - a.spend);
 
+  const untaggedRollup = rollups.find((r) => !r.propertyId);
+
   const compareIds = (params.compare ?? "").split(",").filter(Boolean);
-  const compareRows = leaderboard.filter((r) => r.propertyId && compareIds.includes(r.propertyId)).slice(0, 5);
+  const compareRows = leaderboard.filter((r) => compareIds.includes(r.propertyId)).slice(0, 5);
 
   return (
     <div>
@@ -118,35 +140,36 @@ export default async function PropertiesPage({
       )}
 
       <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[800px] text-left text-sm">
+        <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-3 py-2">Compare</th>
               <th className="px-3 py-2">Property</th>
+              <th className="px-3 py-2 text-right">Campaigns</th>
               <th className="px-3 py-2 text-right">Spend</th>
               <th className="px-3 py-2 text-right">Leads</th>
               <th className="px-3 py-2 text-right">CPL</th>
               <th className="px-3 py-2 text-right">Est. Revenue</th>
               <th className="px-3 py-2 text-right">Est. ROI</th>
               <th className="px-3 py-2">Assumptions</th>
+              <th className="px-3 py-2">Delete</th>
             </tr>
           </thead>
           <tbody>
             {leaderboard.map((r) => (
-              <tr key={r.propertyId ?? "untagged"} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr key={r.propertyId} className="border-t border-zinc-100 dark:border-zinc-800">
                 <td className="px-3 py-2">
-                  {r.propertyId && (
-                    <Link
-                      href={`/dashboard/properties?range=${params.range ?? "last30"}&compare=${[...compareIds, r.propertyId].join(",")}`}
-                      className="text-xs underline"
-                    >
-                      Add
-                    </Link>
-                  )}
+                  <Link
+                    href={`/dashboard/properties?range=${params.range ?? "last30"}&compare=${[...compareIds, r.propertyId].join(",")}`}
+                    className="text-xs underline"
+                  >
+                    Add
+                  </Link>
                 </td>
                 <td className="px-3 py-2 font-medium">
                   {r.name} {r.city && <span className="text-xs text-zinc-500">({r.city})</span>}
                 </td>
+                <td className="px-3 py-2 text-right">{r.campaignCount}</td>
                 <td className="px-3 py-2 text-right">{r.spend.toFixed(0)}</td>
                 <td className="px-3 py-2 text-right">{r.leads}</td>
                 <td className="px-3 py-2 text-right">{r.cpl?.toFixed(0) ?? "—"}</td>
@@ -167,34 +190,65 @@ export default async function PropertiesPage({
                   />
                 </td>
                 <td className="px-3 py-2">
-                  {r.propertyId ? (
-                    <form action={updatePropertyAssumptions} className="flex items-center gap-1">
+                  <form action={updatePropertyAssumptions} className="flex items-center gap-1">
+                    <input type="hidden" name="property_id" value={r.propertyId} />
+                    <input
+                      name="assumed_conversion_rate"
+                      type="number"
+                      step="0.1"
+                      defaultValue={r.assumedConversionRate ?? ""}
+                      placeholder="Conv %"
+                      className="w-16 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                    <input
+                      name="assumed_avg_deal_value"
+                      type="number"
+                      defaultValue={r.assumedAvgDealValue ?? ""}
+                      placeholder="Deal ₹"
+                      className="w-24 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                    <button type="submit" className="rounded border border-zinc-300 px-2 py-0.5 text-xs dark:border-zinc-700">
+                      Save
+                    </button>
+                  </form>
+                </td>
+                <td className="px-3 py-2">
+                  {r.campaignCount === 0 ? (
+                    <form action={deleteProperty}>
                       <input type="hidden" name="property_id" value={r.propertyId} />
-                      <input
-                        name="assumed_conversion_rate"
-                        type="number"
-                        step="0.1"
-                        defaultValue={r.assumedConversionRate ?? ""}
-                        placeholder="Conv %"
-                        className="w-16 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-                      />
-                      <input
-                        name="assumed_avg_deal_value"
-                        type="number"
-                        defaultValue={r.assumedAvgDealValue ?? ""}
-                        placeholder="Deal ₹"
-                        className="w-24 rounded border border-zinc-300 px-1 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-                      />
-                      <button type="submit" className="rounded border border-zinc-300 px-2 py-0.5 text-xs dark:border-zinc-700">
-                        Save
+                      <button type="submit" className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 dark:border-red-800">
+                        Delete
                       </button>
                     </form>
                   ) : (
-                    <span className="text-xs text-zinc-400">n/a</span>
+                    <span className="text-xs text-zinc-400" title="Untag its campaigns first (Campaigns page)">
+                      in use
+                    </span>
                   )}
                 </td>
               </tr>
             ))}
+            {leaderboard.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-3 py-4 text-center text-zinc-500">
+                  No properties yet — add one from the Campaigns page.
+                </td>
+              </tr>
+            )}
+            {untaggedRollup && (
+              <tr className="border-t border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2 font-medium text-zinc-500">Untagged campaigns</td>
+                <td className="px-3 py-2 text-right text-zinc-500">—</td>
+                <td className="px-3 py-2 text-right">{untaggedRollup.spend.toFixed(0)}</td>
+                <td className="px-3 py-2 text-right">{untaggedRollup.leads}</td>
+                <td className="px-3 py-2 text-right">{untaggedRollup.cpl?.toFixed(0) ?? "—"}</td>
+                <td className="px-3 py-2 text-right text-zinc-400">n/a</td>
+                <td className="px-3 py-2 text-right text-zinc-400">n/a</td>
+                <td className="px-3 py-2 text-xs text-zinc-400">n/a</td>
+                <td className="px-3 py-2 text-xs text-zinc-400">n/a</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
