@@ -36,8 +36,8 @@ export const HEALTH_LABEL: Record<HealthStatus, string> = {
 };
 
 export const HEALTH_DOT_CLASS: Record<HealthStatus, string> = {
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  paused: "bg-zinc-400",
+  green: "bg-good",
+  amber: "bg-warn",
+  red: "bg-bad",
+  paused: "bg-faint",
 };

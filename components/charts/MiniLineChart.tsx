@@ -2,10 +2,11 @@
 
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
-// dataviz skill palette: sequential blue step 500, recessive grid/axis grays.
-const LINE_COLOR = "#256abf";
-const GRID_COLOR = "#e4e4e7";
-const AXIS_COLOR = "#a1a1aa";
+// dataviz skill palette: matches the dashboard's accent blue, recessive
+// grid/axis grays pulled from the confirmed design tokens.
+const LINE_COLOR = "#2563eb";
+const GRID_COLOR = "#e5e7eb";
+const AXIS_COLOR = "#9ca3af";
 
 /**
  * Single-metric line chart — one axis, per the dataviz skill's no-dual-axis
@@ -25,8 +26,8 @@ export function MiniLineChart<T extends Record<string, unknown>>({
   valueFormatter: (v: number) => string;
 }) {
   return (
-    <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
-      <p className="mb-2 text-xs font-medium uppercase text-zinc-500">{label}</p>
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">{label}</p>
       <ResponsiveContainer width="100%" height={140}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={GRID_COLOR} vertical={false} />

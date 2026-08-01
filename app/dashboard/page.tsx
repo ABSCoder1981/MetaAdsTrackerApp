@@ -84,19 +84,19 @@ function CeoDashboard({
 
   return (
     <div className="max-w-5xl">
-      <h1 className="mb-4 text-2xl font-semibold text-black dark:text-zinc-50">CEO Dashboard</h1>
+      <h1 className="mb-4 text-2xl font-bold">CEO Dashboard</h1>
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
         <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
-        <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
-          <p className="text-xs uppercase tracking-wide text-zinc-500">Est. Revenue (30d)</p>
-          <p className="text-2xl font-semibold">
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <p className="text-[11px] text-muted">Est. Revenue (30d)</p>
+          <p className="tabular-nums mt-1 text-[19px] font-bold tracking-tight">
             <EstimatedValue value={estRevenue} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} assumedConversionRatePct={null} assumedAvgDealValue={null} />
           </p>
         </div>
-        <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
-          <p className="text-xs uppercase tracking-wide text-zinc-500">Est. ROI</p>
-          <p className="text-2xl font-semibold">
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <p className="text-[11px] text-muted">Est. ROI</p>
+          <p className="tabular-nums mt-1 text-[19px] font-bold tracking-tight">
             <EstimatedValue value={estRoiPct} formatter={(v) => `${v.toFixed(0)}%`} assumedConversionRatePct={null} assumedAvgDealValue={null} />
           </p>
         </div>
@@ -132,13 +132,15 @@ function DirectorDashboard({
 }) {
   const properties = propertyLeaderboard(data);
   const cities = cityLeaderboard(data);
+  const cpl = todayTotals.leads > 0 ? todayTotals.spend / todayTotals.leads : null;
 
   return (
     <div className="max-w-5xl">
-      <h1 className="mb-4 text-2xl font-semibold text-black dark:text-zinc-50">Management Dashboard</h1>
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <h1 className="mb-4 text-2xl font-bold">Management Dashboard</h1>
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
         <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
+        <KpiCard label="CPL Today" value={cpl ?? 0} formatter={(v) => (cpl != null ? v.toFixed(0) : "—")} />
         <KpiCard label="Active Campaigns" value={data.campaigns.filter((c) => c.status === "ACTIVE").length} />
         <KpiCard label="Open Alerts" value={data.alerts.length} />
       </div>
@@ -173,7 +175,7 @@ function ManagerDashboard({
 
   return (
     <div className="max-w-5xl">
-      <h1 className="mb-4 text-2xl font-semibold text-black dark:text-zinc-50">Manager Dashboard</h1>
+      <h1 className="mb-4 text-2xl font-bold">Manager Dashboard</h1>
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
         <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
@@ -182,10 +184,10 @@ function ManagerDashboard({
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
-          <p className="mb-2 text-sm font-semibold text-black dark:text-zinc-50">Campaigns Needing Attention</p>
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <p className="mb-2 text-sm font-bold">Campaigns Needing Attention</p>
           {attention.length === 0 ? (
-            <p className="text-sm text-zinc-500">Nothing flagged right now.</p>
+            <p className="text-sm text-muted">Nothing flagged right now.</p>
           ) : (
             <ul className="space-y-1">
               {attention.slice(0, 8).map((c) => (
@@ -194,7 +196,7 @@ function ManagerDashboard({
                   <Link href={`/dashboard/campaigns/${c.id}`} className="truncate hover:underline">
                     {c.name}
                   </Link>
-                  <span className="text-xs text-zinc-500">({c.adAccountName})</span>
+                  <span className="text-xs text-muted">({c.adAccountName})</span>
                 </li>
               ))}
             </ul>
@@ -227,14 +229,14 @@ function AnalystDashboard({ data }: { data: DashboardData }) {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="mb-4 text-2xl font-semibold text-black dark:text-zinc-50">Analyst View</h1>
-      <p className="mb-4 text-sm text-zinc-500">
+      <h1 className="mb-4 text-2xl font-bold">Analyst View</h1>
+      <p className="mb-4 text-sm text-muted">
         Full KPI table across every campaign with data in the last 30 days — a drag-drop pivot builder is Phase 2
         scope (Section 24); export via Campaigns/Properties pages in the meantime.
       </p>
-      <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
+          <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">Property</th>
               <th className="px-3 py-2">Account</th>
@@ -244,11 +246,11 @@ function AnalystDashboard({ data }: { data: DashboardData }) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr key={r.id} className="border-t border-border">
                 <td className="px-3 py-2">{r.name}</td>
                 <td className="px-3 py-2">{r.account}</td>
-                <td className="px-3 py-2 text-right">{r.spend.toFixed(0)}</td>
-                <td className="px-3 py-2 text-right">{r.leads}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.spend.toFixed(0)}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.leads}</td>
               </tr>
             ))}
           </tbody>

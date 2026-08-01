@@ -12,28 +12,28 @@ export function ProfitabilityPanel({ snapshots, limit = 5 }: { snapshots: Latest
     .slice(0, limit);
 
   return (
-    <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
+    <div className="rounded-lg border border-border bg-surface p-4">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-semibold text-black dark:text-zinc-50">Continue / Pause Recommendations</p>
-        <Link href="/dashboard/profitability" className="text-xs text-zinc-500 underline">
+        <p className="text-sm font-bold">Continue / Pause Recommendations</p>
+        <Link href="/dashboard/profitability" className="text-xs text-muted hover:text-accent">
           View all
         </Link>
       </div>
       {needsAttention.length === 0 ? (
-        <p className="text-sm text-zinc-500">No campaigns currently flagged for budget reduction or pause.</p>
+        <p className="text-sm text-muted">No campaigns currently flagged for budget reduction or pause.</p>
       ) : (
         <ul className="space-y-2">
           {needsAttention.map((s) => (
             <li key={s.campaignId} className="text-sm">
               <div className="flex items-center gap-2">
-                <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${RECOMMENDATION_CLASS[s.recommendation]}`}>
+                <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${RECOMMENDATION_CLASS[s.recommendation]}`}>
                   {RECOMMENDATION_LABEL[s.recommendation]}
                 </span>
                 <Link href={`/dashboard/campaigns/${s.campaignId}`} className="truncate hover:underline">
                   {s.campaignName}
                 </Link>
               </div>
-              <p className="text-xs text-zinc-500">{s.reason}</p>
+              <p className="text-xs text-muted">{s.reason}</p>
             </li>
           ))}
         </ul>

@@ -16,8 +16,8 @@ export const RECOMMENDATION_LABEL: Record<ProfitabilityRecommendation, string> =
 };
 
 export const RECOMMENDATION_CLASS: Record<ProfitabilityRecommendation, string> = {
-  continue: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  monitor: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-  reduce_budget: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
-  pause: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+  continue: "bg-good-tint text-good",
+  monitor: "bg-warn-tint text-warn",
+  reduce_budget: "bg-reduce-tint text-reduce",
+  pause: "bg-bad-tint text-bad",
 };

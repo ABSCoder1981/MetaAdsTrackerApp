@@ -6,37 +6,40 @@ export type LeaderboardRow = {
   cpl: number | null;
 };
 
-/** Generic leaderboard (Section 11.2: Property/City/Manager leaderboards —
- * same shape, different grouping dimension upstream). */
+/** Generic leaderboard (Section 11.2: Property/City leaderboards — same
+ * shape, different grouping dimension upstream). Ranked-list style per the
+ * confirmed dashboard design (managers compare numbers faster than a
+ * donut chart). */
 export function LeaderboardTable({ title, rows, limit = 5 }: { title: string; rows: LeaderboardRow[]; limit?: number }) {
   const top = [...rows].sort((a, b) => b.spend - a.spend).slice(0, limit);
 
   return (
-    <div className="rounded border border-zinc-200 p-4 dark:border-zinc-800">
-      <p className="mb-2 text-sm font-semibold text-black dark:text-zinc-50">{title}</p>
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <p className="mb-2 text-sm font-bold">{title}</p>
       {top.length === 0 ? (
-        <p className="text-sm text-zinc-500">No data in this range.</p>
+        <p className="text-sm text-muted">No data in this range.</p>
       ) : (
-        <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-zinc-500">
-            <tr>
-              <th className="py-1">Name</th>
-              <th className="py-1 text-right">Spend</th>
-              <th className="py-1 text-right">Leads</th>
-              <th className="py-1 text-right">CPL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {top.map((r) => (
-              <tr key={r.key} className="border-t border-zinc-100 dark:border-zinc-800">
-                <td className="max-w-[160px] truncate py-1">{r.name}</td>
-                <td className="py-1 text-right">{r.spend.toFixed(0)}</td>
-                <td className="py-1 text-right">{r.leads}</td>
-                <td className="py-1 text-right">{r.cpl?.toFixed(0) ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div>
+          <div className="grid grid-cols-[20px_1.4fr_0.8fr_0.7fr_0.7fr] gap-2 border-b border-border pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-faint">
+            <span />
+            <span>Name</span>
+            <span className="text-right">Spend</span>
+            <span className="text-right">Leads</span>
+            <span className="text-right">CPL</span>
+          </div>
+          {top.map((r, i) => (
+            <div
+              key={r.key}
+              className="grid grid-cols-[20px_1.4fr_0.8fr_0.7fr_0.7fr] items-center gap-2 border-b border-border py-2 text-sm last:border-b-0"
+            >
+              <span className="text-[11px] font-bold text-faint">{i + 1}</span>
+              <span className="truncate font-medium">{r.name}</span>
+              <span className="tabular-nums text-right">{r.spend.toFixed(0)}</span>
+              <span className="tabular-nums text-right">{r.leads}</span>
+              <span className="tabular-nums text-right">{r.cpl?.toFixed(0) ?? "—"}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
