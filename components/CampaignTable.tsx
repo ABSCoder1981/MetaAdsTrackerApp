@@ -27,6 +27,20 @@ type Option = { id: string; name: string };
 export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; properties: Option[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+  const [openPropertyPopover, setOpenPropertyPopover] = useState<string | null>(null);
+  const [untaggingId, setUntaggingId] = useState<string | null>(null);
+
+  function untagProperty(campaignId: string) {
+    setUntaggingId(campaignId);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.append("campaign_id", campaignId);
+      fd.append("property_id", "__clear__");
+      await bulkTagCampaigns(fd);
+      setUntaggingId(null);
+      setOpenPropertyPopover(null);
+    });
+  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -60,8 +74,7 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
           ))}
           <span className="font-medium">{selected.size} selected</span>
           <select name="property_id" className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900" defaultValue="">
-            <option value="">Property… (leave unchanged)</option>
-            <option value="__clear__">Remove property tag</option>
+            <option value="">Property…</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -131,7 +144,40 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
                 <td className="px-3 py-2 text-right">{r.impressions.toLocaleString()}</td>
                 <td className="px-3 py-2 text-right">{r.leads}</td>
                 <td className="px-3 py-2 text-right">{r.cpl ? r.cpl.toFixed(0) : "—"}</td>
-                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.propertyName ?? "—"}</td>
+                <td className="relative px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                  {r.propertyName ? (
+                    <>
+                      <button
+                        type="button"
+                        className="hover:underline"
+                        onClick={() => setOpenPropertyPopover(openPropertyPopover === r.id ? null : r.id)}
+                      >
+                        {r.propertyName}
+                      </button>
+                      {openPropertyPopover === r.id && (
+                        <div className="absolute left-0 top-full z-10 mt-1 w-40 rounded border border-zinc-300 bg-white p-2 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                          <button
+                            type="button"
+                            disabled={isPending && untaggingId === r.id}
+                            onClick={() => untagProperty(r.id)}
+                            className="w-full rounded px-2 py-1 text-left text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950"
+                          >
+                            {isPending && untaggingId === r.id ? "Removing…" : "Remove property tag"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOpenPropertyPopover(null)}
+                            className="mt-1 w-full rounded px-2 py-1 text-left text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.city ?? "—"}</td>
                 <td className="px-3 py-2">
                   {r.recommendation ? (
