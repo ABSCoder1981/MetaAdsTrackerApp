@@ -39,6 +39,16 @@ const EXPORT_COLUMNS: ExportColumn<CampaignRow>[] = [
   { key: "recommendation", label: "Recommendation" },
 ];
 
+// Very subtle full-row tint by recommendation (design review item 11) —
+// deliberately faint so the row is still primarily readable as data, not a
+// colored block.
+const ROW_TINT_CLASS: Record<ProfitabilityRecommendation, string> = {
+  continue: "bg-good-tint",
+  monitor: "bg-warn-tint",
+  reduce_budget: "bg-reduce-tint",
+  pause: "bg-bad-tint",
+};
+
 export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; properties: Option[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -85,13 +95,13 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
       {selected.size > 0 && (
         <form
           action={handleTagSubmit}
-          className="mb-3 flex flex-wrap items-center gap-2 rounded border border-zinc-300 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-raised p-3 text-sm"
         >
           {[...selected].map((id) => (
             <input key={id} type="hidden" name="campaign_id" value={id} />
           ))}
           <span className="font-medium">{selected.size} selected</span>
-          <select name="property_id" className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900" defaultValue="">
+          <select name="property_id" className="rounded-md border border-border bg-background px-2 py-1 text-foreground" defaultValue="">
             <option value="">Property…</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -102,21 +112,21 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
           <input
             name="city"
             placeholder="City…"
-            className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+            className="rounded-md border border-border bg-background px-2 py-1 text-foreground"
           />
           <button
             type="submit"
             disabled={isPending}
-            className="rounded bg-black px-3 py-1 text-white disabled:opacity-50 dark:bg-white dark:text-black"
+            className="rounded-md bg-foreground px-3 py-1 text-background disabled:opacity-50"
           >
             {isPending ? "Applying…" : "Apply tags"}
           </button>
         </form>
       )}
 
-      <div className="overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full min-w-[950px] text-left text-sm">
-          <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
+          <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">
                 <input
@@ -141,7 +151,10 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr
+                key={r.id}
+                className={`border-t border-border ${r.recommendation ? ROW_TINT_CLASS[r.recommendation] : ""}`}
+              >
                 <td className="px-3 py-2">
                   <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
                 </td>
@@ -156,13 +169,13 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
                     {r.name}
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.adAccountName}</td>
-                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.status ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{r.spend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                <td className="px-3 py-2 text-right">{r.impressions.toLocaleString()}</td>
-                <td className="px-3 py-2 text-right">{r.leads}</td>
-                <td className="px-3 py-2 text-right">{r.cpl ? r.cpl.toFixed(0) : "—"}</td>
-                <td className="relative px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                <td className="px-3 py-2 text-muted">{r.adAccountName}</td>
+                <td className="px-3 py-2 text-muted">{r.status ?? "—"}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.spend.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.impressions.toLocaleString()}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.leads}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.cpl ? r.cpl.toFixed(0) : "—"}</td>
+                <td className="relative px-3 py-2 text-muted">
                   {r.propertyName ? (
                     <>
                       <button
@@ -173,19 +186,19 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
                         {r.propertyName}
                       </button>
                       {openPropertyPopover === r.id && (
-                        <div className="absolute left-0 top-full z-10 mt-1 w-40 rounded border border-zinc-300 bg-white p-2 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                        <div className="absolute left-0 top-full z-10 mt-1 w-40 rounded-md border border-border bg-surface p-2 text-xs shadow-lg">
                           <button
                             type="button"
                             disabled={isPending && untaggingId === r.id}
                             onClick={() => untagProperty(r.id)}
-                            className="w-full rounded px-2 py-1 text-left text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950"
+                            className="w-full rounded px-2 py-1 text-left text-bad hover:bg-bad-tint disabled:opacity-50"
                           >
                             {isPending && untaggingId === r.id ? "Removing…" : "Remove property tag"}
                           </button>
                           <button
                             type="button"
                             onClick={() => setOpenPropertyPopover(null)}
-                            className="mt-1 w-full rounded px-2 py-1 text-left text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            className="mt-1 w-full rounded px-2 py-1 text-left text-muted hover:bg-row-hover"
                           >
                             Cancel
                           </button>
@@ -196,14 +209,14 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
                     "—"
                   )}
                 </td>
-                <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{r.city ?? "—"}</td>
+                <td className="px-3 py-2 text-muted">{r.city ?? "—"}</td>
                 <td className="px-3 py-2">
                   {r.recommendation ? (
-                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${RECOMMENDATION_CLASS[r.recommendation]}`}>
+                    <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${RECOMMENDATION_CLASS[r.recommendation]}`}>
                       {RECOMMENDATION_LABEL[r.recommendation]}
                     </span>
                   ) : (
-                    <span className="text-xs text-zinc-400">—</span>
+                    <span className="text-xs text-faint">—</span>
                   )}
                 </td>
               </tr>

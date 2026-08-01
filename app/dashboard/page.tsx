@@ -16,6 +16,8 @@ import { getLatestProfitabilitySnapshots, type LatestProfitabilitySnapshot } fro
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { LeaderboardTable } from "@/components/dashboard/LeaderboardTable";
 import { AlertPanel } from "@/components/dashboard/AlertPanel";
+import { AlertBanner } from "@/components/dashboard/AlertBanner";
+import { DecisionPanel } from "@/components/dashboard/DecisionPanel";
 import { WorkspaceTrendChart } from "@/components/dashboard/WorkspaceTrendChart";
 import { ProfitabilitySnapshotWidget } from "@/components/dashboard/ProfitabilitySnapshotWidget";
 import { ProfitabilityPanel } from "@/components/dashboard/ProfitabilityPanel";
@@ -85,6 +87,7 @@ function CeoDashboard({
   return (
     <div className="max-w-5xl">
       <h1 className="mb-4 text-2xl font-bold">CEO Dashboard</h1>
+      <AlertBanner alerts={data.alerts} />
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
         <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
@@ -114,6 +117,7 @@ function CeoDashboard({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <ProfitabilitySnapshotWidget snapshots={profitability} />
+        <DecisionPanel snapshots={profitability} />
       </div>
     </div>
   );
@@ -137,6 +141,7 @@ function DirectorDashboard({
   return (
     <div className="max-w-5xl">
       <h1 className="mb-4 text-2xl font-bold">Management Dashboard</h1>
+      <AlertBanner alerts={data.alerts} />
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
         <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
@@ -152,6 +157,7 @@ function DirectorDashboard({
       <div className="grid gap-4 sm:grid-cols-2">
         <LeaderboardTable title="Property Leaderboard" rows={properties} limit={8} />
         <LeaderboardTable title="City Leaderboard" rows={cities} limit={8} />
+        <DecisionPanel snapshots={profitability} />
         <ProfitabilityPanel snapshots={profitability} limit={8} />
         <AlertPanel alerts={data.alerts} limit={8} />
       </div>
@@ -176,6 +182,7 @@ function ManagerDashboard({
   return (
     <div className="max-w-5xl">
       <h1 className="mb-4 text-2xl font-bold">Manager Dashboard</h1>
+      <AlertBanner alerts={data.alerts} />
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
         <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
@@ -203,6 +210,10 @@ function ManagerDashboard({
           )}
         </div>
         <ProfitabilityPanel snapshots={profitability} limit={8} />
+      </div>
+
+      <div className="mb-6">
+        <DecisionPanel snapshots={profitability} />
       </div>
 
       <AlertPanel alerts={data.alerts} limit={8} />
