@@ -43,12 +43,15 @@ export async function bulkTagCampaigns(formData: FormData) {
   const campaignIds = formData.getAll("campaign_id").map(String);
   if (campaignIds.length === 0) throw new Error("No campaigns selected");
 
-  const propertyId = String(formData.get("property_id") ?? "") || null;
+  const propertyIdRaw = String(formData.get("property_id") ?? "");
+  const clearProperty = propertyIdRaw === "__clear__";
+  const propertyId = clearProperty ? null : propertyIdRaw || null;
   const city = String(formData.get("city") ?? "").trim() || null;
-  if (!propertyId && !city) throw new Error("Select a property or enter a city to apply");
+  if (!propertyId && !clearProperty && !city) throw new Error("Select a property or enter a city to apply");
 
-  const update: Record<string, string> = { tagging_source: "manual" };
+  const update: Record<string, string | null> = { tagging_source: "manual" };
   if (propertyId) update.property_id = propertyId;
+  else if (clearProperty) update.property_id = null;
   if (city) update.city = city;
 
   const { error } = await supabase

@@ -60,7 +60,8 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
           ))}
           <span className="font-medium">{selected.size} selected</span>
           <select name="property_id" className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900" defaultValue="">
-            <option value="">Property…</option>
+            <option value="">Property… (leave unchanged)</option>
+            <option value="__clear__">Remove property tag</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
