@@ -1,7 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { resolveActiveWorkspaceId } from "@/lib/workspace";
+import { logAuditEvent } from "@/lib/settings/audit";
 
 export async function updatePropertyAssumptions(formData: FormData) {
   const supabase = await createClient();
@@ -43,8 +46,19 @@ export async function deleteProperty(formData: FormData) {
     );
   }
 
+  const { data: property } = await supabase.from("property").select("name, workspace_id").eq("id", propertyId).single();
+
   const { error } = await supabase.from("property").delete().eq("id", propertyId);
   if (error) throw new Error(error.message);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const cookieStore = await cookies();
+  const workspaceId = property?.workspace_id ?? (await resolveActiveWorkspaceId(supabase, cookieStore.get("active_workspace_id")?.value));
+  if (user && workspaceId) {
+    await logAuditEvent({ workspaceId, userId: user.id, action: "property_deleted", details: { propertyId, name: property?.name } });
+  }
 
   revalidatePath("/dashboard/properties");
   revalidatePath("/dashboard/campaigns");

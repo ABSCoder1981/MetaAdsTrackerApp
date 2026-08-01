@@ -151,16 +151,42 @@ resurrected from this v1.0 spec.
   delivery was deferred in Section 12 above — don't build half of a dependent feature ahead of its dependency.
 
 ### Epic J — Admin & Role Management, Workspace Settings (Sections 9.13, 9.16) — Sprint 9
-- User invite/deactivate flow; role assignment per RBAC matrix.
-- Workspace settings: branding, timezone, currency, alert thresholds, notification channel preferences.
-- Workspace switcher for multi-workspace users.
-- Connect/reconnect Ad Account flow.
-- **DoD:** an Admin can invite a user, assign a role, and connect a new Ad Account without engineering help
-  (Section 28 acceptance criterion — literally test this with a non-engineer if possible).
+- **Built:** `/dashboard/settings` (Admin-only, gated server-side same as every other elevated action in this
+  app) — workspace name/timezone/currency (migration `0009_workspace_settings.sql`), member list with role
+  reassignment and removal, "add member by email." Workspace switcher for multi-workspace users already existed
+  (Sprint 1).
+- **"Invite" scoped down to "add by email," deliberately:** a real invite flow means Supabase sending an email,
+  which hits the same shared-SMTP 2-emails/hour rate limit already logged in Section 7 of this plan (discovered
+  Sprint 1). Building an invite flow on top of a limit that blocks it after two uses isn't worth it until custom
+  SMTP is configured — tracked there as a pre-launch dependency already, not duplicated here. What's built instead
+  works today: the person creates their own account via the existing signup flow, then an Admin adds them to the
+  workspace by email — same end state, no email dependency.
+- **Not built:** branding (logo/theme) and notification channel preferences — the latter has nothing to
+  configure yet since email/WhatsApp delivery itself isn't built (Epic E, Section 7's WhatsApp note). Alert
+  thresholds are already workspace-configurable via the Profitability page (Section 12) and the underlying alert
+  rule engine (Section 17); a unified thresholds screen is cosmetic consolidation, not new capability — deferred.
+  Connect/reconnect Ad Account flow already existed pre-Sprint-9 (`/dashboard/ad-accounts`).
+- **Last-Administrator guard:** role changes and removals that would leave a workspace with zero Administrators
+  are blocked server-side (`assertNotLastAdmin` in `app/dashboard/settings/actions.ts`) — an unrecoverable
+  workspace is worse than a slightly annoying error message.
 
 ### Epic K — Audit Logs (Section 9.15) — Sprint 9 (parallel with J)
-- Immutable log of logins, exports, settings changes, alert acknowledgments, role changes.
-- Admin-only searchable view with date/user/action filters.
+- **Built:** `/dashboard/audit-log` (Admin-only), reading the `audit_log` table that's existed since Sprint 1
+  (only ever written by the workspace-bootstrap function until now). Action-type filter via query param; date/user
+  columns shown per row, joined against `auth.users` via the service-role client since no workspace_member-wide
+  select policy exists for regular clients (see below).
+- **Events logged so far:** `workspace_created` (pre-existing), `workspace_settings_updated`, `member_added`,
+  `member_role_changed`, `member_removed`, `property_deleted`, `profitability_thresholds_updated`.
+- **Not yet logged:** logins, exports, alert acknowledgments — exports don't exist as a distinct action yet
+  (CSV export, Sprint 8, is a client-side blob download with nothing to log server-side), alert ack/resolve
+  actions exist (`lib/alerts/`) but weren't wired to `logAuditEvent` in this pass, and login events would need a
+  Supabase Auth hook, not application code. `logAuditEvent` (`lib/settings/audit.ts`) is now a one-line call to
+  add per mutation — extending coverage is incremental from here, not a redesign.
+- **Why service-role client throughout:** no regular-client RLS policy allows reading `audit_log` across all of a
+  workspace's members, or `workspace_member` beyond one's own row, or `auth.users` at all. Every settings/audit
+  action re-verifies the caller is an Administrator via the normal RLS-scoped client *first*, then uses the
+  service-role client for the actual cross-member read/write — the same posture the Meta sync job already uses
+  (`docs/ARCHITECTURE.md` §4), not a new pattern.
 
 ### Sprint 10 — MVP Hardening & Acceptance
 - Run every checklist item in PRD Section 28 as a formal test pass, not an informal review.

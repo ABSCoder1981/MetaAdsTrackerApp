@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { getDashboardContext } from "@/lib/dashboard/context";
+import { logAuditEvent } from "@/lib/settings/audit";
 
 /** Admin-only threshold configuration (Section 9.10, 12). Gated in the
  * action itself, not just hidden in the UI — same posture as everything
@@ -34,6 +35,13 @@ export async function updateProfitabilityThresholds(formData: FormData) {
     })
     .eq("id", workspaceId);
   if (error) throw new Error(error.message);
+
+  await logAuditEvent({
+    workspaceId,
+    userId: user.id,
+    action: "profitability_thresholds_updated",
+    details: { breakEvenMarginPct, consecutiveDayThreshold, minSpendForEligibility },
+  });
 
   revalidatePath("/dashboard/profitability");
 }

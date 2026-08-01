@@ -21,6 +21,13 @@ const NAV_SECTIONS = [
       { href: "/dashboard/ad-accounts", label: "Ad Accounts", icon: "⇄" },
     ],
   },
+  {
+    label: "Admin",
+    items: [
+      { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
+      { href: "/dashboard/audit-log", label: "Audit Log", icon: "▤" },
+    ],
+  },
 ];
 
 export function SidebarNav() {
