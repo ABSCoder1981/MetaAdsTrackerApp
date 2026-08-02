@@ -21,6 +21,7 @@ import { DecisionPanel } from "@/components/dashboard/DecisionPanel";
 import { WorkspaceTrendChart } from "@/components/dashboard/WorkspaceTrendChart";
 import { ProfitabilitySnapshotWidget } from "@/components/dashboard/ProfitabilitySnapshotWidget";
 import { ProfitabilityPanel } from "@/components/dashboard/ProfitabilityPanel";
+import { PropertySpendDonut } from "@/components/dashboard/PropertySpendDonut";
 import { HEALTH_DOT_CLASS, HEALTH_LABEL } from "@/lib/campaigns/health";
 import { computeEstimatedRoiPct } from "@/lib/analytics/estimatedRoi";
 import { EstimatedValue } from "@/components/EstimatedValue";
@@ -89,8 +90,8 @@ function CeoDashboard({
       <h1 className="mb-4 text-2xl font-bold">CEO Dashboard</h1>
       <AlertBanner alerts={data.alerts} />
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
-        <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
+        <KpiCard icon="₹" tone={1} label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
+        <KpiCard icon="◎" tone={2} label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
         <div className="rounded-lg border border-border bg-surface p-3">
           <p className="text-[11px] text-muted">Est. Revenue (30d)</p>
           <p className="tabular-nums mt-1 text-[19px] font-bold tracking-tight">
@@ -115,9 +116,14 @@ function CeoDashboard({
         <AlertPanel alerts={data.alerts} />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <ProfitabilitySnapshotWidget snapshots={profitability} />
         <DecisionPanel snapshots={profitability} />
+      </div>
+
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <p className="mb-3 text-sm font-bold">Spend by Property</p>
+        <PropertySpendDonut slices={properties} />
       </div>
     </div>
   );
@@ -143,15 +149,19 @@ function DirectorDashboard({
       <h1 className="mb-4 text-2xl font-bold">Management Dashboard</h1>
       <AlertBanner alerts={data.alerts} />
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
-        <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
-        <KpiCard label="CPL Today" value={cpl ?? 0} formatter={(v) => (cpl != null ? v.toFixed(0) : "—")} />
-        <KpiCard label="Active Campaigns" value={data.campaigns.filter((c) => c.status === "ACTIVE").length} />
-        <KpiCard label="Open Alerts" value={data.alerts.length} />
+        <KpiCard icon="₹" tone={1} label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
+        <KpiCard icon="◎" tone={2} label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
+        <KpiCard icon="⌀" tone={3} label="CPL Today" value={cpl ?? 0} formatter={(v) => (cpl != null ? v.toFixed(0) : "—")} />
+        <KpiCard icon="▤" tone={4} label="Active Campaigns" value={data.campaigns.filter((c) => c.status === "ACTIVE").length} />
+        <KpiCard icon="▲" tone="status" label="Open Alerts" value={data.alerts.length} />
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <WorkspaceTrendChart data={data.trend} />
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <p className="mb-3 text-sm font-bold">Spend by Property</p>
+          <PropertySpendDonut slices={properties} />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -184,10 +194,10 @@ function ManagerDashboard({
       <h1 className="mb-4 text-2xl font-bold">Manager Dashboard</h1>
       <AlertBanner alerts={data.alerts} />
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
-        <KpiCard label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
-        <KpiCard label="CPL Today" value={cpl ?? 0} formatter={(v) => (cpl != null ? v.toFixed(0) : "—")} />
-        <KpiCard label="Open Alerts" value={data.alerts.length} />
+        <KpiCard icon="₹" tone={1} label="Spend Today" value={todayTotals.spend} previousValue={yesterdayTotals.spend} formatter={(v) => v.toFixed(0)} />
+        <KpiCard icon="◎" tone={2} label="Leads Today" value={todayTotals.leads} previousValue={yesterdayTotals.leads} />
+        <KpiCard icon="⌀" tone={3} label="CPL Today" value={cpl ?? 0} formatter={(v) => (cpl != null ? v.toFixed(0) : "—")} />
+        <KpiCard icon="▲" tone="status" label="Open Alerts" value={data.alerts.length} />
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">

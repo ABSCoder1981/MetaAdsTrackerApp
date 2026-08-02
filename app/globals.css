@@ -21,6 +21,14 @@
   --reduce-tint: rgba(234, 88, 12, 0.09);
   --bad: #dc2626;
   --bad-tint: rgba(220, 38, 38, 0.09);
+
+  /* Categorical (dataviz skill's validated default palette) — used for KPI
+     icon badges / donut slices where color encodes identity, not status. */
+  --series-1: #2a78d6; --series-1-tint: rgba(42, 120, 214, 0.14);
+  --series-2: #eb6834; --series-2-tint: rgba(235, 104, 52, 0.14);
+  --series-3: #1baf7a; --series-3-tint: rgba(27, 175, 122, 0.14);
+  --series-4: #eda100; --series-4-tint: rgba(237, 161, 0, 0.14);
+  --series-5: #e87ba4; --series-5-tint: rgba(232, 123, 164, 0.14);
 }
 
 @theme inline {
@@ -44,6 +52,17 @@
   --color-reduce-tint: var(--reduce-tint);
   --color-bad: var(--bad);
   --color-bad-tint: var(--bad-tint);
+
+  --color-series-1: var(--series-1);
+  --color-series-1-tint: var(--series-1-tint);
+  --color-series-2: var(--series-2);
+  --color-series-2-tint: var(--series-2-tint);
+  --color-series-3: var(--series-3);
+  --color-series-3-tint: var(--series-3-tint);
+  --color-series-4: var(--series-4);
+  --color-series-4-tint: var(--series-4-tint);
+  --color-series-5: var(--series-5);
+  --color-series-5-tint: var(--series-5-tint);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -71,6 +90,12 @@
     --reduce-tint: rgba(249, 115, 22, 0.12);
     --bad: #ef4444;
     --bad-tint: rgba(239, 68, 68, 0.12);
+
+    --series-1: #3987e5; --series-1-tint: rgba(57, 135, 229, 0.18);
+    --series-2: #d95926; --series-2-tint: rgba(217, 89, 38, 0.18);
+    --series-3: #199e70; --series-3-tint: rgba(25, 158, 112, 0.18);
+    --series-4: #c98500; --series-4-tint: rgba(201, 133, 0, 0.18);
+    --series-5: #d55181; --series-5-tint: rgba(213, 81, 129, 0.18);
   }
 }
 
@@ -98,6 +123,12 @@
   --reduce-tint: rgba(249, 115, 22, 0.12);
   --bad: #ef4444;
   --bad-tint: rgba(239, 68, 68, 0.12);
+
+  --series-1: #3987e5; --series-1-tint: rgba(57, 135, 229, 0.18);
+  --series-2: #d95926; --series-2-tint: rgba(217, 89, 38, 0.18);
+  --series-3: #199e70; --series-3-tint: rgba(25, 158, 112, 0.18);
+  --series-4: #c98500; --series-4-tint: rgba(201, 133, 0, 0.18);
+  --series-5: #d55181; --series-5-tint: rgba(213, 81, 129, 0.18);
 }
 
 :root[data-theme="light"] {
@@ -121,6 +152,12 @@
   --reduce-tint: rgba(234, 88, 12, 0.09);
   --bad: #dc2626;
   --bad-tint: rgba(220, 38, 38, 0.09);
+
+  --series-1: #2a78d6; --series-1-tint: rgba(42, 120, 214, 0.14);
+  --series-2: #eb6834; --series-2-tint: rgba(235, 104, 52, 0.14);
+  --series-3: #1baf7a; --series-3-tint: rgba(27, 175, 122, 0.14);
+  --series-4: #eda100; --series-4-tint: rgba(237, 161, 0, 0.14);
+  --series-5: #e87ba4; --series-5-tint: rgba(232, 123, 164, 0.14);
 }
 
 /* Third mode — lavender/purple, playful SaaS look (reference: "Taskly").
@@ -148,6 +185,12 @@
   --reduce-tint: rgba(234, 88, 12, 0.14);
   --bad: #dc2626;
   --bad-tint: rgba(220, 38, 38, 0.14);
+
+  --series-1: #2a78d6; --series-1-tint: rgba(42, 120, 214, 0.14);
+  --series-2: #eb6834; --series-2-tint: rgba(235, 104, 52, 0.14);
+  --series-3: #1baf7a; --series-3-tint: rgba(27, 175, 122, 0.14);
+  --series-4: #eda100; --series-4-tint: rgba(237, 161, 0, 0.14);
+  --series-5: #e87ba4; --series-5-tint: rgba(232, 123, 164, 0.14);
 }
 
 body {
