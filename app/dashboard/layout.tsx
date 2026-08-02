@@ -31,9 +31,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ))!;
 
   return (
-    <div className="mx-auto grid min-h-screen max-w-[1360px] grid-cols-[216px_1fr] items-start gap-4 px-6 py-4">
-      <aside className="sticky top-4 rounded-lg border border-border bg-surface p-3">
-        <div className="flex items-center gap-2 px-1 pb-3 text-sm font-bold">
+    <div className="mx-auto grid min-h-screen max-w-[1360px] grid-cols-1 items-start gap-4 px-3 py-3 sm:px-6 sm:py-4 md:grid-cols-[216px_1fr]">
+      <aside className="rounded-lg border border-border bg-surface p-2 sm:p-3 md:sticky md:top-4">
+        <div className="hidden items-center gap-2 px-1 pb-3 text-sm font-bold md:flex">
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-tint text-xs text-accent">
             ◧
           </span>
@@ -43,23 +43,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
-        <header className="sticky top-4 z-10 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2.5">
-          <span className="font-bold text-sm">Dashboard</span>
+        <header className="top-4 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 sm:sticky sm:gap-3 sm:px-4">
+          <span className="hidden font-bold text-sm sm:inline">Dashboard</span>
           <WorkspaceSwitcher workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
-            <span className="text-sm text-muted">{user.email}</span>
+            <span className="hidden text-sm text-muted md:inline">{user.email}</span>
             <form action={signOut}>
               <button
                 type="submit"
-                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-muted hover:text-foreground"
+                className="rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-muted hover:text-foreground sm:px-3"
               >
                 Sign out
               </button>
             </form>
           </div>
         </header>
-        <main className="flex-1">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

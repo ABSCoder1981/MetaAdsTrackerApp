@@ -14,12 +14,12 @@ export function WorkspaceSwitcher({
   const formRef = useRef<HTMLFormElement>(null);
 
   return (
-    <form ref={formRef} action={setActiveWorkspace} className="inline-block">
+    <form ref={formRef} action={setActiveWorkspace} className="inline-block max-w-[55vw] sm:max-w-none">
       <select
         name="workspace_id"
         defaultValue={currentWorkspaceId}
         onChange={() => formRef.current?.requestSubmit()}
-        className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
       >
         {workspaces.map((w) => (
           <option key={w.workspace_id} value={w.workspace_id}>
