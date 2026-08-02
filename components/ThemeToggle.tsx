@@ -4,14 +4,9 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark" | "playful";
 
-// NOTE — intentional label/value inversion, confirmed explicitly by the user:
-// the button labeled "Bright" applies the dark-navy candy-colored token set
-// (data-theme="dark"), and the button labeled "Dark" applies the white token
-// set (data-theme="light"). This looks backwards from the CSS variable names
-// in globals.css, but that's the requested UX — don't "fix" it back.
 const OPTIONS: { value: Theme; label: string; icon: string }[] = [
-  { value: "dark", label: "Bright", icon: "☀" },
-  { value: "light", label: "Dark", icon: "🌙" },
+  { value: "light", label: "Bright", icon: "☀" },
+  { value: "dark", label: "Dark", icon: "🌙" },
   { value: "playful", label: "Playful", icon: "🎨" },
 ];
 
