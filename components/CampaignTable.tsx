@@ -6,6 +6,7 @@ import { bulkTagCampaigns } from "@/app/dashboard/campaigns/actions";
 import { HEALTH_DOT_CLASS, HEALTH_LABEL, type HealthStatus } from "@/lib/campaigns/health";
 import { RECOMMENDATION_LABEL, RECOMMENDATION_CLASS, type ProfitabilityRecommendation } from "@/lib/profitability/labels";
 import { ExportCsvButton } from "@/components/ExportCsvButton";
+import { TableScroller } from "@/components/TableScroller";
 import type { ExportColumn } from "@/lib/export/csv";
 
 export type CampaignRow = {
@@ -124,7 +125,7 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller>
         <table className="w-full min-w-[950px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -223,7 +224,7 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
     </div>
   );
 }

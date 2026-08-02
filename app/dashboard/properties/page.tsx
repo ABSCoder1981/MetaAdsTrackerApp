@@ -9,6 +9,7 @@ import { ExportCsvButton } from "@/components/ExportCsvButton";
 import type { ExportColumn } from "@/lib/export/csv";
 import Link from "next/link";
 import { updatePropertyAssumptions, deleteProperty } from "./actions";
+import { TableScroller } from "@/components/TableScroller";
 
 type PropertyExportRow = {
   name: string;
@@ -164,7 +165,7 @@ export default async function PropertiesPage({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller>
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -276,7 +277,7 @@ export default async function PropertiesPage({
             )}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
     </div>
   );
 }

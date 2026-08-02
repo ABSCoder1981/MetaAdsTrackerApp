@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { resolveDateRange, RANGE_OPTIONS } from "@/lib/campaigns/dateRange";
 import { QualityTagSelect } from "@/components/QualityTagSelect";
+import { TableScroller } from "@/components/TableScroller";
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const params = await searchParams;
@@ -82,7 +83,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       </p>
 
       <h2 className="mb-2 text-lg font-bold">Top Campaigns by Leads</h2>
-      <div className="mb-8 overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller className="mb-8">
         <table className="w-full min-w-[600px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -116,7 +117,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             )}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
 
       <h2 className="mb-2 text-lg font-bold">Individual Leads (CRM / Landing Page)</h2>
       <p className="mb-3 text-sm text-muted">
@@ -128,7 +129,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           {webhookUrl}
         </p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller>
         <table className="w-full min-w-[600px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -164,7 +165,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             )}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
     </div>
   );
 }

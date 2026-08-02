@@ -22,6 +22,7 @@ import { WorkspaceTrendChart } from "@/components/dashboard/WorkspaceTrendChart"
 import { ProfitabilitySnapshotWidget } from "@/components/dashboard/ProfitabilitySnapshotWidget";
 import { ProfitabilityPanel } from "@/components/dashboard/ProfitabilityPanel";
 import { PropertySpendDonut } from "@/components/dashboard/PropertySpendDonut";
+import { TableScroller } from "@/components/TableScroller";
 import { HEALTH_DOT_CLASS, HEALTH_LABEL } from "@/lib/campaigns/health";
 import { computeEstimatedRoiPct } from "@/lib/analytics/estimatedRoi";
 import { EstimatedValue } from "@/components/EstimatedValue";
@@ -255,7 +256,7 @@ function AnalystDashboard({ data }: { data: DashboardData }) {
         Full KPI table across every campaign with data in the last 30 days — a drag-drop pivot builder is Phase 2
         scope (Section 24); export via Campaigns/Properties pages in the meantime.
       </p>
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller>
         <table className="w-full min-w-[500px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -276,7 +277,7 @@ function AnalystDashboard({ data }: { data: DashboardData }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
     </div>
   );
 }

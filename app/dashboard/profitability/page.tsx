@@ -7,6 +7,7 @@ import { getLatestProfitabilitySnapshots } from "@/lib/profitability/query";
 import { DEFAULT_PROFITABILITY_THRESHOLDS } from "@/lib/profitability/rules";
 import { CLASSIFICATION_LABEL, RECOMMENDATION_LABEL, RECOMMENDATION_CLASS } from "@/lib/profitability/labels";
 import { updateProfitabilityThresholds } from "./actions";
+import { TableScroller } from "@/components/TableScroller";
 
 export default async function ProfitabilityPage() {
   const supabase = await createClient();
@@ -77,7 +78,7 @@ export default async function ProfitabilityPage() {
         </details>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller>
         <table className="w-full min-w-[700px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -118,7 +119,7 @@ export default async function ProfitabilityPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
     </div>
   );
 }

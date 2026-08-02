@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { getDashboardContext } from "@/lib/dashboard/context";
+import { TableScroller } from "@/components/TableScroller";
 
 const ACTION_LABEL: Record<string, string> = {
   workspace_created: "Workspace created",
@@ -76,7 +77,7 @@ export default async function AuditLogPage({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <TableScroller>
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
@@ -106,7 +107,7 @@ export default async function AuditLogPage({
             )}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
     </div>
   );
 }
