@@ -22,6 +22,11 @@ alter table daily_metrics add column if not exists clicks bigint;
 -- repeat viewers), so there's no correct way to derive a true period
 -- frequency from what's stored; showing "latest day" and labeling it as
 -- such in the UI is the honest option here, not a range average.
+--
+-- Postgres won't let CREATE OR REPLACE change a function's output column
+-- shape (new columns here vs. the 0003 version) — has to be dropped first.
+drop function if exists campaign_metrics_summary(uuid, date, date);
+
 create or replace function campaign_metrics_summary(p_workspace_id uuid, p_since date, p_until date)
 returns table (
   campaign_id uuid,
