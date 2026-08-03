@@ -32,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="mx-auto grid min-h-screen max-w-[1360px] grid-cols-1 items-start gap-4 px-3 py-3 sm:px-6 sm:py-4 md:grid-cols-[216px_1fr]">
-      <aside className="rounded-lg border border-border bg-surface p-2 sm:p-3 md:sticky md:top-4">
+      <aside className="rounded-lg border border-border bg-surface p-2 sm:p-3">
         <div className="hidden items-center gap-2 px-1 pb-3 text-sm font-bold md:flex">
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-tint text-xs text-accent">
             ◧
@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
-        <header className="top-4 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 sm:sticky sm:gap-3 sm:px-4">
+        <header className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 sm:gap-3 sm:px-4">
           <span className="hidden font-bold text-sm sm:inline">Dashboard</span>
           <WorkspaceSwitcher workspaces={workspaces} currentWorkspaceId={currentWorkspaceId} />
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
