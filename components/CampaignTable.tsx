@@ -21,6 +21,18 @@ export type CampaignRow = {
   impressions: number;
   leads: number;
   cpl: number | null;
+  /** Range-correct (clicks/impressions×100) — null until clicks data exists
+   * for the selected range (historical rows synced before clicks tracking
+   * was added won't have it). */
+  ctr: number | null;
+  /** Range-correct (spend/clicks) — same clicks-availability caveat as ctr. */
+  cpc: number | null;
+  /** Range-correct (spend/impressions×1000) — always computable, no clicks needed. */
+  cpm: number | null;
+  /** Meta's own value for the LATEST day in the selected range, not a
+   * period average — reach isn't additive across days so a true range
+   * frequency can't be derived from stored data. */
+  latestFrequency: number | null;
   health: HealthStatus;
   recommendation: ProfitabilityRecommendation | null;
 };
@@ -35,6 +47,10 @@ const EXPORT_COLUMNS: ExportColumn<CampaignRow>[] = [
   { key: "impressions", label: "Impressions" },
   { key: "leads", label: "Leads" },
   { key: "cpl", label: "CPL" },
+  { key: "ctr", label: "CTR %" },
+  { key: "cpc", label: "CPC" },
+  { key: "cpm", label: "CPM" },
+  { key: "latestFrequency", label: "Frequency (latest day)" },
   { key: "propertyName", label: "Property" },
   { key: "city", label: "City" },
   { key: "recommendation", label: "Recommendation" },
@@ -126,7 +142,7 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
       )}
 
       <TableScroller>
-        <table className="w-full min-w-[950px] text-left text-sm">
+        <table className="w-full min-w-[1250px] text-left text-sm">
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">
@@ -145,6 +161,12 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
               <th className="px-3 py-2 text-right">Impressions</th>
               <th className="px-3 py-2 text-right">Leads</th>
               <th className="px-3 py-2 text-right">CPL</th>
+              <th className="px-3 py-2 text-right">CTR</th>
+              <th className="px-3 py-2 text-right">CPC</th>
+              <th className="px-3 py-2 text-right">CPM</th>
+              <th className="px-3 py-2 text-right" title="Latest day in range, not a period average">
+                Freq.
+              </th>
               <th className="px-3 py-2">Property</th>
               <th className="px-3 py-2">City</th>
               <th className="px-3 py-2">Recommendation</th>
@@ -176,6 +198,10 @@ export function CampaignTable({ rows, properties }: { rows: CampaignRow[]; prope
                 <td className="tabular-nums px-3 py-2 text-right">{r.impressions.toLocaleString()}</td>
                 <td className="tabular-nums px-3 py-2 text-right">{r.leads}</td>
                 <td className="tabular-nums px-3 py-2 text-right">{r.cpl ? r.cpl.toFixed(0) : "—"}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.ctr != null ? `${r.ctr.toFixed(2)}%` : "—"}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.cpc != null ? r.cpc.toFixed(2) : "—"}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.cpm != null ? r.cpm.toFixed(0) : "—"}</td>
+                <td className="tabular-nums px-3 py-2 text-right">{r.latestFrequency != null ? r.latestFrequency.toFixed(2) : "—"}</td>
                 <td className="relative px-3 py-2 text-muted">
                   {r.propertyName ? (
                     <>

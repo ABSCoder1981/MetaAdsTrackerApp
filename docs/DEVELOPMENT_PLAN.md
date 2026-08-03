@@ -437,3 +437,32 @@ delta stay pinned to today/yesterday regardless of the picker — Section 9.1 sp
 Today-vs-Yesterday delta on headline KPIs, and letting the range picker silently change what "Today" means
 would break that requirement rather than extend it. Same for "Campaigns Needing Attention" (Manager Dashboard),
 which reflects current health, not a historical window.
+
+---
+
+## 15. CTR / CPC / CPM / Frequency on the Campaign Table (user-requested, "just surface it")
+
+**Why this wasn't a trivial UI add:** the request assumed the data already existed — it partly didn't. Meta
+sends `ctr`/`cpc`/`cpm`/`frequency` as ratios pre-computed for a single day; averaging or summing those across a
+date range produces a meaningless number (e.g. you can't add "2.1% CTR" across 7 days and get a weekly CTR).
+`spend` and `impressions` are raw, summable totals, so CPM (`spend/impressions×1000`) was always computable
+correctly for any range — but CTR (`clicks/impressions`) and CPC (`spend/clicks`) needed a raw `clicks` count
+that this app never requested from Meta or stored.
+
+**What was built:**
+- `lib/meta/client.ts`: added `clicks` to the Insights API fields list and `MetaInsightRow` type — a standard
+  Meta field, just never requested.
+- Migration `0010_daily_metrics_clicks.sql`: adds `daily_metrics.clicks bigint`, and replaces
+  `campaign_metrics_summary` (Sprint 3) to return `total_clicks`, `computed_ctr`, `computed_cpc`, `computed_cpm`
+  — all derived from raw summed totals in SQL, not an average of Meta's daily ratios.
+- `lib/meta/sync.ts`: stores `clicks` on every synced `daily_metrics` row going forward.
+- `CampaignTable.tsx` / CSV export: four new columns (CTR, CPC, CPM, Freq.).
+
+**What's deliberately NOT "period-correct," and why:** Frequency (`impressions/reach`) still shows the *latest
+day in range*, not a period average — `reach` is unique people, so summing daily reach across a range
+double-counts repeat viewers, and there's no valid way to derive a true period frequency from what's stored.
+The column header carries a tooltip saying so rather than presenting an approximation as exact.
+
+**Known gap:** historical `daily_metrics` rows synced before this change have `clicks = null`, so CTR/CPC show
+"—" for any date range that only includes pre-migration days, until the next sync re-pulls that window. This
+is the same "blank until next sync" tradeoff flagged before building it, not a bug discovered after the fact.

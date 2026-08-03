@@ -128,6 +128,7 @@ export async function syncAdAccount(
           ctr: row.ctr ? parseFloat(row.ctr) : null,
           unique_ctr: row.unique_ctr ? parseFloat(row.unique_ctr) : null,
           cpc: row.cpc ? parseFloat(row.cpc) : null,
+          clicks: row.clicks ? parseInt(row.clicks, 10) : null,
           leads,
           cpl: leads > 0 ? spend / leads : null,
         },

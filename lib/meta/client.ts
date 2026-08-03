@@ -164,6 +164,7 @@ export type MetaInsightRow = {
   ctr?: string;
   unique_ctr?: string;
   cpc?: string;
+  clicks?: string;
   actions?: { action_type: string; value: string }[];
 };
 
@@ -180,7 +181,7 @@ export async function fetchInsights(
       time_range: JSON.stringify({ since, until }),
       time_increment: "1",
       fields:
-        "campaign_id,spend,impressions,reach,frequency,cpm,ctr,unique_ctr,cpc,actions",
+        "campaign_id,spend,impressions,reach,frequency,cpm,ctr,unique_ctr,cpc,clicks,actions",
       limit: "500",
     },
     accessToken

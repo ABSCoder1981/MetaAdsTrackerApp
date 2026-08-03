@@ -58,8 +58,16 @@ export default async function CampaignsPage({
     const impressions = Number(m?.total_impressions ?? 0);
     const leads = Number(m?.total_leads ?? 0);
     const cpl = m?.computed_cpl != null ? Number(m.computed_cpl) : null;
-    const ctr = m?.latest_ctr != null ? Number(m.latest_ctr) : null;
-    const frequency = m?.latest_frequency != null ? Number(m.latest_frequency) : null;
+    // Health heuristic still uses Meta's latest-day ctr/frequency (it's
+    // asking "is this campaign healthy right now," not "over this range").
+    const latestCtr = m?.latest_ctr != null ? Number(m.latest_ctr) : null;
+    const latestFrequency = m?.latest_frequency != null ? Number(m.latest_frequency) : null;
+    // These, in contrast, are range-correct — computed in SQL from raw
+    // summable totals (campaign_metrics_summary, migration 0010), not an
+    // average of Meta's daily ratios.
+    const ctr = m?.computed_ctr != null ? Number(m.computed_ctr) : null;
+    const cpc = m?.computed_cpc != null ? Number(m.computed_cpc) : null;
+    const cpm = m?.computed_cpm != null ? Number(m.computed_cpm) : null;
 
     const adAccount = Array.isArray(c.ad_account) ? c.ad_account[0] : c.ad_account;
     const property = Array.isArray(c.property) ? c.property[0] : c.property;
@@ -76,7 +84,11 @@ export default async function CampaignsPage({
       impressions,
       leads,
       cpl,
-      health: computeHealthStatus({ status: c.status as string | null, ctr, frequency, spend, impressions, leads }),
+      ctr,
+      cpc,
+      cpm,
+      latestFrequency,
+      health: computeHealthStatus({ status: c.status as string | null, ctr: latestCtr, frequency: latestFrequency, spend, impressions, leads }),
       recommendation: null,
     };
   });
