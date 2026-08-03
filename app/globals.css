@@ -160,39 +160,6 @@
   --series-5: #e87ba4; --series-5-tint: rgba(232, 123, 164, 0.14);
 }
 
-/* Third mode — lavender/purple, playful SaaS look (reference: "Taskly").
-   Same semantic hues (good=green, warn=amber, reduce=orange, bad=red) as
-   Bright/Dark so recommendation badges and health dots stay unambiguous
-   across all three themes — only the neutral/accent palette changes. */
-:root[data-theme="playful"] {
-  --background: #f1f0fb;
-  --foreground: #2a2550;
-  --surface: #ffffff;
-  --surface-raised: #f6f5fd;
-  --border: #e4e1f7;
-  --muted: #6e6795;
-  --faint: #9c95c0;
-  --row-hover: rgba(124, 111, 238, 0.06);
-
-  --accent: #7c6fee;
-  --accent-tint: rgba(124, 111, 238, 0.14);
-
-  --good: #16a34a;
-  --good-tint: rgba(22, 163, 74, 0.14);
-  --warn: #ca8a04;
-  --warn-tint: rgba(202, 138, 4, 0.14);
-  --reduce: #ea580c;
-  --reduce-tint: rgba(234, 88, 12, 0.14);
-  --bad: #dc2626;
-  --bad-tint: rgba(220, 38, 38, 0.14);
-
-  --series-1: #2a78d6; --series-1-tint: rgba(42, 120, 214, 0.14);
-  --series-2: #eb6834; --series-2-tint: rgba(235, 104, 52, 0.14);
-  --series-3: #1baf7a; --series-3-tint: rgba(27, 175, 122, 0.14);
-  --series-4: #eda100; --series-4-tint: rgba(237, 161, 0, 0.14);
-  --series-5: #e87ba4; --series-5-tint: rgba(232, 123, 164, 0.14);
-}
-
 body {
   background: var(--background);
   color: var(--foreground);

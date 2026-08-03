@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-type Theme = "light" | "dark" | "playful";
+type Theme = "light" | "dark";
 
 const OPTIONS: { value: Theme; label: string; icon: string }[] = [
   { value: "light", label: "Bright", icon: "☀" },
   { value: "dark", label: "Dark", icon: "🌙" },
-  { value: "playful", label: "Playful", icon: "🎨" },
 ];
 
 function applyTheme(theme: Theme) {
@@ -23,8 +22,12 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    const stored = document.documentElement.getAttribute("data-theme") as Theme | null;
-    const initial: Theme = stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const stored = document.documentElement.getAttribute("data-theme");
+    // Migrates away from the removed "playful" theme (or any other stale
+    // value) for anyone who had it stored from before.
+    const isValid = stored === "light" || stored === "dark";
+    const initial: Theme = isValid ? (stored as Theme) : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (!isValid) applyTheme(initial);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initial);
   }, []);

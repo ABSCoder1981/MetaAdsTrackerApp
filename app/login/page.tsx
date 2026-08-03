@@ -63,9 +63,9 @@ export default function LoginPage() {
       </div>
 
       {/* Illustration panel — a fixed brand gradient, deliberately independent
-          of the Bright/Dark/Playful theme (same treatment as the accent KPI
-          card in the dashboard mockups). Hidden below md: the form is what
-          matters on a phone screen. */}
+          of the Bright/Dark theme (same treatment as the accent KPI card in
+          the dashboard mockups). Hidden below md: the form is what matters
+          on a phone screen. */}
       <div className="relative hidden w-2/5 min-w-[320px] overflow-hidden bg-gradient-to-br from-[#1b2461] via-[#3d51c9] to-[#a9b7f5] md:flex md:flex-col md:justify-between">
         <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#141a4a]" />
         <div className="absolute right-10 top-24 h-16 w-16 rounded-full bg-[#8b9aec]" />
