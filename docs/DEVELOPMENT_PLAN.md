@@ -416,3 +416,24 @@ one. Added a Delete action on `/dashboard/properties`, gated to properties with 
 referenced it) — the server action re-checks this and throws a clear error rather than cascading, consistent
 with this codebase's existing "never silently destroy data" pattern (see `deleteProperty` in
 `app/dashboard/properties/actions.ts`).
+
+---
+
+## 14. Dashboard Date-Range Filter (post-launch, user-reported gap)
+
+**What was missing:** `/dashboard` had no date-range control at all — `loadDashboardData` hardcoded "last 30
+days" for the trend chart, property/city leaderboards, decision panel, and spend donut, with no way to view
+last 7 days or a custom range the way Campaigns/Properties/Leads already allow (Section 14's filter pattern).
+
+**What was built:** the same `RANGE_OPTIONS`/`resolveDateRange` picker used elsewhere (`lib/campaigns/dateRange.ts`)
+now drives `/dashboard?range=...` for all four role dashboards. `loadDashboardData` takes an explicit
+`{ since, until, label }` instead of hardcoding the window; `DashboardData.metricsLast30` is renamed
+`metricsRange` to make clear it's no longer fixed to 30 days. Every widget driven by it (trend chart,
+leaderboards, decision panel, spend donut, Analyst table) now labels itself with the active range so it's never
+ambiguous what period a number represents.
+
+**Deliberately left fixed:** the "Spend Today / Leads Today / CPL Today" KPI row and its Today-vs-Yesterday
+delta stay pinned to today/yesterday regardless of the picker — Section 9.1 specifically asks for a
+Today-vs-Yesterday delta on headline KPIs, and letting the range picker silently change what "Today" means
+would break that requirement rather than extend it. Same for "Campaigns Needing Attention" (Manager Dashboard),
+which reflects current health, not a historical window.

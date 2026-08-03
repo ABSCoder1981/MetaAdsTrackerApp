@@ -28,7 +28,14 @@ export type DashboardData = {
   campaigns: CampaignForDashboard[];
   metricsToday: Map<string, DashboardMetricsEntry>;
   metricsYesterday: Map<string, DashboardMetricsEntry>;
-  metricsLast30: Map<string, DashboardMetricsEntry>;
+  /** Metrics for whichever range the dashboard's date-range picker is set
+   * to (default Last 30 Days) — drives the trend chart, leaderboards,
+   * decision panel, and spend donut. Kept separate from metricsToday/
+   * metricsYesterday, which stay fixed regardless of the picker (Section
+   * 9.1's "Today vs Yesterday delta on headline KPIs" is a specific,
+   * always-on requirement, not something a date filter should change). */
+  metricsRange: Map<string, DashboardMetricsEntry>;
+  rangeLabel: string;
   trend: WorkspaceTrendPoint[];
   alerts: AlertPanelRow[];
   properties: { id: string; name: string; assumedConversionRate: number | null; assumedAvgDealValue: number | null }[];
@@ -55,16 +62,19 @@ function toMetricsMap(rows: Record<string, unknown>[] | null): Map<string, Dashb
   );
 }
 
-export async function loadDashboardData(supabase: SupabaseClient, workspaceId: string): Promise<DashboardData> {
+export async function loadDashboardData(
+  supabase: SupabaseClient,
+  workspaceId: string,
+  range: { since: string; until: string; label: string }
+): Promise<DashboardData> {
   const today = isoDaysAgo(0);
   const yesterday = isoDaysAgo(1);
-  const since30 = isoDaysAgo(29);
 
   const [
     { data: campaignRows },
     { data: todayRows },
     { data: yesterdayRows },
-    { data: last30Rows },
+    { data: rangeRows },
     { data: trendRows },
     { data: alertRows },
     { data: propertyRows },
@@ -75,8 +85,8 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
       .eq("workspace_id", workspaceId),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: today, p_until: today }),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: yesterday, p_until: yesterday }),
-    supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: since30, p_until: today }),
-    supabase.rpc("workspace_daily_trend", { p_workspace_id: workspaceId, p_since: since30, p_until: today }),
+    supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: range.since, p_until: range.until }),
+    supabase.rpc("workspace_daily_trend", { p_workspace_id: workspaceId, p_since: range.since, p_until: range.until }),
     supabase
       .from("alert")
       .select("id, rule_key, severity, triggered_at, campaign(name), ad_account(name)")
@@ -123,7 +133,8 @@ export async function loadDashboardData(supabase: SupabaseClient, workspaceId: s
     campaigns,
     metricsToday: toMetricsMap(todayRows),
     metricsYesterday: toMetricsMap(yesterdayRows),
-    metricsLast30: toMetricsMap(last30Rows),
+    metricsRange: toMetricsMap(rangeRows),
+    rangeLabel: range.label,
     trend: (trendRows ?? []).map((r: Record<string, unknown>) => ({
       date: (r.date as string).slice(5),
       spend: Number(r.total_spend ?? 0),
@@ -163,7 +174,7 @@ export function totalEstimatedRevenue(data: DashboardData): number | null {
 function propertyLeaderboardRaw(data: DashboardData) {
   return rollupByProperty(
     data.campaigns.map((c) => ({ id: c.id, propertyId: c.propertyId })),
-    data.metricsLast30
+    data.metricsRange
   ).filter((r) => r.propertyId);
 }
 
@@ -182,7 +193,7 @@ export function propertyLeaderboard(data: DashboardData): LeaderboardRow[] {
   const propertyNameById = new Map(data.campaigns.filter((c) => c.propertyId).map((c) => [c.propertyId!, c.propertyName!]));
   return rollupByProperty(
     data.campaigns.map((c) => ({ id: c.id, propertyId: c.propertyId })),
-    data.metricsLast30
+    data.metricsRange
   )
     .filter((r) => r.propertyId)
     .map((r) => ({
@@ -197,7 +208,7 @@ export function propertyLeaderboard(data: DashboardData): LeaderboardRow[] {
 export function cityLeaderboard(data: DashboardData): LeaderboardRow[] {
   return rollupByKey(
     data.campaigns.map((c) => ({ id: c.id, key: c.city ?? "Unknown" })),
-    data.metricsLast30
+    data.metricsRange
   ).map((r) => ({ key: r.key, name: r.key, spend: r.spend, leads: r.leads, cpl: r.cpl }));
 }
 
