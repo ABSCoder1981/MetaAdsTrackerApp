@@ -2,10 +2,15 @@
 '
 ' Entity-Relationship diagram — Meta Ads Campaign Performance Tracker.
 ' Reflects the schema as it actually exists after migrations 0001-0010
-' (supabase/migrations/), not the original PRD sketch — see
-' docs/DATA_MODEL.md Section 0 "Schema Evolution" for the divergence
-' history. Regenerate this file by hand whenever a migration changes
-' table shape; nothing here is auto-extracted from SQL.
+' (supabase/migrations/), which implements PRD v4.0 — not the v1.0
+' Section 18 DDL sketch, which still describes Sales Team/Employee and
+' Manager/Executive tagging that v4.0 explicitly removed (Section 5.1's
+' flat org model). See docs/DATA_MODEL.md Section 0 "Schema Evolution"
+' for the full divergence history and docs/DEVELOPMENT_PLAN.md's
+' Deviation Log for why. PRD section numbers are cited per entity group
+' below so this stays traceable to the spec, not just the SQL.
+' Regenerate this file by hand whenever a migration changes table
+' shape; nothing here is auto-extracted from SQL.
 '
 ' Render: VS Code "PlantUML" extension, plantuml.com/plantuml, or
 '   `plantuml er-diagram.puml` (needs a local Java + plantuml.jar).
@@ -27,7 +32,8 @@ skinparam title {
 title Meta Ads Campaign Performance Tracker — Entity-Relationship Diagram\n(current schema, migrations 0001-0010)
 
 ' ===========================================================================
-' Identity, Auth & RBAC
+' Identity, Auth & RBAC — PRD Section 21 (RBAC matrix), Section 9.16
+' (workspace switcher / multi-tenancy), Section 7.3-7.7 (the 5 personas)
 ' ===========================================================================
 
 entity "auth.users" as auth_users <<external (Supabase Auth)>> {
@@ -65,11 +71,15 @@ entity "role" as role {
 note right of role
   workspace_id = null means a
   system template. 5 current
-  templates: CEO, Marketing
-  Director, Marketing Manager,
-  Data Analyst, Administrator.
-  (Supervisor / Campaign Executive
-  removed in migration 0007.)
+  templates match PRD v4.0
+  Section 7.3-7.7 exactly: CEO,
+  Marketing Director, Marketing
+  Manager, Data Analyst,
+  Administrator. (Supervisor /
+  Campaign Executive were PRD
+  v1.0 Sections 7.4-7.5 personas,
+  removed in migration 0007 —
+  see Deviation Log.)
 end note
 
 entity "permission" as permission {
@@ -81,7 +91,8 @@ entity "permission" as permission {
 }
 
 ' ===========================================================================
-' Meta Ad Structure
+' Meta Ad Structure — PRD Section 9.14 (Meta API integration), Section
+' 9.2 (Campaign Monitoring), Section 9.5 (Property Analytics)
 ' ===========================================================================
 
 entity "business_manager" as business_manager {
@@ -140,11 +151,15 @@ entity "campaign" as campaign {
 }
 note bottom of campaign
   manager_id / executive_id existed
-  in v1 schema, dropped in migration
-  0007 (flat org model, PRD v4).
-  city is independent of property
-  (bulk-taggable, migration 0008),
-  not derived from it.
+  in the PRD v1.0 Section 18.1 sketch,
+  dropped in migration 0007 (flat org
+  model, PRD v4.0 Section 5.1). city
+  is an independent bulk-taggable
+  attribute per PRD v4.0 Section 9.2
+  ("will not auto-parse campaign
+  names... City is tagged
+  independently of Property"), not
+  derived from property.city.
 end note
 
 entity "audience" as audience {
@@ -192,7 +207,8 @@ entity "pixel" as pixel {
 }
 
 ' ===========================================================================
-' Leads & Customers
+' Leads & Customers — PRD Section 9.4 (Lead Analytics), Section 5.1
+' (dual ingestion: Meta Lead Ads API + landing-page/CRM webhook)
 ' ===========================================================================
 
 entity "lead" as lead {
@@ -217,7 +233,8 @@ entity "customer" as customer {
 }
 
 ' ===========================================================================
-' Performance Metrics
+' Performance Metrics — PRD Section 9.1-9.3 (dashboards, campaign
+' monitoring), Section 19 (daily_metrics as the hot-path fact table)
 ' ===========================================================================
 
 entity "daily_metrics" as daily_metrics {
@@ -252,8 +269,12 @@ note right of daily_metrics
   is a raw summable total, added so
   CTR/CPC can be computed correctly
   over a date RANGE in SQL (see
-  campaign_metrics_summary()),
-  not by averaging daily ratios.
+  campaign_metrics_summary()), not
+  by averaging daily ratios — PRD
+  Section 9.2's filterable date-range
+  requirement implies range-correct
+  numbers, which the pre-clicks
+  schema couldn't actually deliver.
 end note
 
 entity "historical_metrics" as historical_metrics {
@@ -285,16 +306,25 @@ entity "profitability_snapshot" as profitability_snapshot {
   days_below_break_even : integer
 }
 note right of profitability_snapshot
+  New in PRD v4.0 Section 9.10 (not
+  in v1.0 at all — v1.0's 9.10 was
+  Team & Employee Performance,
+  dropped with the flat org model).
   classification: profitable |
     break_even | loss_making
   recommendation: continue | monitor
     | reduce_budget | pause
   One row per campaign per
   evaluation run (end of each sync).
+  Deterministic, no AI/LLM call,
+  per Section 23's explicit
+  instruction.
 end note
 
 ' ===========================================================================
-' Alerts, Notifications, Sync & Audit
+' Alerts, Notifications, Sync & Audit — PRD Section 17 (12 alert rules),
+' Section 9.11 (notification delivery), Section 9.14 (sync reliability),
+' Section 9.15 (audit log)
 ' ===========================================================================
 
 entity "alert" as alert {
