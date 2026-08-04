@@ -1,0 +1,104 @@
+@startuml sequence-meta-sync
+'
+' UML Sequence diagram — daily Meta Ads sync, one ad account.
+' Traces app/api/cron/sync/route.ts -> lib/meta/sync.ts:syncAdAccount()
+' exactly (both the success path and the caught-error path), plus the
+' two evaluators it calls at the end (lib/alerts/evaluate.ts,
+' lib/profitability/evaluate.ts). Not a simplification — every DB call
+' and branch below has a corresponding line in the real code.
+'
+' Render: VS Code "PlantUML" extension, plantuml.com/plantuml, or
+'   `plantuml sequence-meta-sync.puml` (needs a local Java + plantuml.jar).
+
+skinparam sequence {
+  ArrowColor #2563EB
+  LifeLineBorderColor #8892a6
+  ParticipantBorderColor #8892a6
+  ParticipantBackgroundColor #FEFEFE
+  ActorBackgroundColor #FEFEFE
+}
+skinparam maxMessageSize 160
+title Daily Meta Ads Sync — one Ad Account\n(app/api/cron/sync -> lib/meta/sync.ts)
+
+actor "Vercel Cron\n(0 4 * * *)" as Cron
+participant "GET /api/cron/sync" as Route
+participant "syncAdAccount()" as Sync
+database "Supabase\n(service role)" as DB
+participant "Meta Graph API" as Meta
+participant "evaluateAndCreateAlerts()" as Alerts
+participant "evaluateAndStoreProfitability()" as Profitability
+
+Cron -> Route : GET, header\nAuthorization: Bearer $CRON_SECRET
+activate Route
+
+alt header missing or wrong
+  Route --> Cron : 401 Unauthorized
+else authorized
+  Route -> DB : select * from ad_account
+  DB --> Route : every connected ad account,\nacross every workspace
+
+  loop for each ad_account
+    Route -> Sync : syncAdAccount(admin, adAccount)
+    activate Sync
+
+    Sync -> DB : insert sync_log (status='running')
+    DB --> Sync : log row id
+
+    Sync -> DB : select business_manager\n.system_user_token_secret_ref
+    Sync -> DB : rpc get_meta_token(secret_id)\n(Supabase Vault decrypt)
+    DB --> Sync : plaintext System User token
+
+    alt token missing / decrypt fails
+      Sync -> DB : update ad_account\nlast_sync_status='error'
+      Sync -> DB : insert alert (rule_key='sync_failure')\nif none already open (deduped)
+      Sync -> DB : update sync_log (status='error')
+      Sync --> Route : SyncResult { status: "error" }
+    else token OK
+      Sync -> Meta : GET /{ad_account}/campaigns
+      Meta --> Sync : campaigns (id, name, status,\nobjective, budget fields, ...)
+
+      Sync -> DB : select campaign\n(pre-sync status, for\nActive->Paused detection)
+
+      loop for each Meta campaign
+        Sync -> DB : upsert campaign\n(on conflict workspace_id+meta_campaign_id)
+      end
+
+      Sync -> DB : select campaign (post-upsert,\nwith property_id)
+
+      Sync -> Meta : GET /{ad_account}/insights\n(time_range: since..until,\ntime_increment=1, level=campaign)
+      Meta --> Sync : daily insight rows\n(spend, impressions, reach, ctr,\ncpc, cpm, frequency, clicks, actions)
+
+      loop for each insight row
+        Sync -> Sync : leads = extractLeadCount(actions)
+        Sync -> DB : upsert daily_metrics\n(on conflict workspace_id+campaign_id+date)
+      end
+
+      Sync -> DB : select daily_metrics\n(last 8 days, batched\nacross all campaigns on\nthis ad account)
+      DB --> Sync : history rows
+
+      Sync -> Alerts : evaluateAndCreateAlerts(\n  admin, workspaceId, adAccountId,\n  campaigns, historyByCampaign)
+      activate Alerts
+      Alerts -> Alerts : run all 12 Section-17 rules\n(CTR drop, CPL spike, budget\nexhausted, stopped unexpectedly, ...)
+      Alerts -> DB : insert alert rows\n(deduped: skip if same rule_key\nalready open for that campaign)
+      deactivate Alerts
+
+      Sync -> Profitability : evaluateAndStoreProfitability(\n  admin, workspaceId, campaigns)
+      activate Profitability
+      Profitability -> DB : select property assumptions,\nprevious profitability_snapshot
+      Profitability -> Profitability : classify (profitable / break_even /\nloss_making) + recommend\n(continue / monitor / reduce_budget / pause)
+      Profitability -> DB : insert profitability_snapshot
+      Profitability -> DB : insert alert\n(rule_key='pause_recommended')\nif recommendation = pause
+      deactivate Profitability
+
+      Sync -> DB : update ad_account\nlast_synced_at=now(), status='success'
+      Sync -> DB : update sync_log\n(status='success', counts)
+      Sync --> Route : SyncResult { status: "success",\ncampaignsSynced, metricsRowsSynced }
+    end
+    deactivate Sync
+  end
+
+  Route --> Cron : 200 { results: SyncResult[] }
+end
+deactivate Route
+
+@enduml

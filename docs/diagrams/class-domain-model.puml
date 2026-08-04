@@ -1,0 +1,264 @@
+@startuml class-domain-model
+'
+' UML Class diagram — application-layer domain model (TypeScript types
+' and the pure business-logic modules that operate on them), as distinct
+' from the ER diagram (which shows the PERSISTED/database shape). Several
+' of these types are computed/derived and never stored as-is — e.g.
+' CampaignRow.ctr is calculated in SQL from daily_metrics at query time,
+' KpiCard never touches the database at all.
+'
+' TypeScript has no classes here (this codebase is functions + types),
+' so each box is stereotyped <<type>> (a `type`/`interface`) or
+' <<module>> (a file's exported pure functions, shown as if they were
+' static methods — they are not a real class, just grouped for
+' readability). Traceable 1:1 to lib/**/*.ts and components/**/*.tsx.
+'
+' Render: VS Code "PlantUML" extension, plantuml.com/plantuml, or
+'   `plantuml class-domain-model.puml` (needs a local Java + plantuml.jar).
+
+skinparam class {
+  BackgroundColor #FEFEFE
+  BorderColor #8892a6
+  ArrowColor #2563EB
+  FontSize 12
+}
+title Meta Ads Campaign Performance Tracker — Domain Model (application layer)
+
+package "lib/campaigns" {
+  class HealthStatus <<type>> {
+    "green" | "amber" | "red" | "paused"
+  }
+
+  class "health.ts" as HealthModule <<module>> {
+    +computeHealthStatus(status, ctr, frequency,\n  spend, impressions, leads) : HealthStatus
+    +HEALTH_LABEL : Record<HealthStatus, string>
+    +HEALTH_DOT_CLASS : Record<HealthStatus, string>
+  }
+
+  class PacingStatus <<type>> {
+    "ahead" | "on_track" | "behind"
+  }
+
+  class "budgetPacing.ts" as BudgetPacingModule <<module>> {
+    +computeLifetimeBudgetUtilizationPct(...)
+    +computeDailyBudgetUtilizationPct(...)
+    +computeDaysUntilExhaustion(...)
+    +computePacingStatus(recentAvg, priorAvg) : PacingStatus
+  }
+
+  class "dateRange.ts" as DateRangeModule <<module>> {
+    +RANGE_OPTIONS : {key, label}[]
+    +resolveDateRange(rangeKey, now?)\n  : {since, until, label}
+  }
+
+  HealthModule ..> HealthStatus : returns
+  BudgetPacingModule ..> PacingStatus : returns
+}
+
+package "lib/profitability" {
+  class ProfitabilityClassification <<type>> {
+    "profitable" | "break_even" | "loss_making"
+  }
+
+  class ProfitabilityRecommendation <<type>> {
+    "continue" | "monitor" | "reduce_budget" | "pause"
+  }
+
+  class "rules.ts" as ProfitabilityRules <<module>> {
+    +DEFAULT_PROFITABILITY_THRESHOLDS : {\n  breakEvenMarginPct,\n  consecutiveDayThreshold,\n  minSpendForEligibility }
+    +classifyProfitability(profitLoss, spend,\n  breakEvenMarginPct) : ProfitabilityClassification
+    +computeDaysBelowBreakEven(prevDays,\n  isLossMakingToday) : number
+    +computeRecommendation(classification,\n  daysBelowBreakEven, threshold)\n  : ProfitabilityRecommendation
+    +buildProfitabilityReason(input) : string
+  }
+
+  class LatestProfitabilitySnapshot <<type>> {
+    campaignId : string
+    campaignName : string
+    classification : ProfitabilityClassification
+    recommendation : ProfitabilityRecommendation
+    reason : string
+    spendToDate : number
+    estimatedProfitLoss : number
+    daysBelowBreakEven : number
+    evaluatedAt : string
+  }
+
+  class "evaluate.ts" as ProfitabilityEvaluate <<module>> {
+    +evaluateAndStoreProfitability(admin,\n  workspaceId, campaigns) : Promise<void>
+  }
+
+  class "query.ts" as ProfitabilityQuery <<module>> {
+    +getLatestProfitabilitySnapshots(supabase,\n  workspaceId) : Promise<LatestProfitabilitySnapshot[]>
+  }
+
+  ProfitabilityRules ..> ProfitabilityClassification : returns
+  ProfitabilityRules ..> ProfitabilityRecommendation : returns
+  ProfitabilityEvaluate ..> ProfitabilityRules : uses
+  ProfitabilityQuery ..> LatestProfitabilitySnapshot : returns
+}
+
+package "lib/alerts" {
+  class "evaluate.ts" as AlertsEvaluate <<module>> {
+    +evaluateAndCreateAlerts(admin, workspaceId,\n  adAccountId, campaigns, history)\n  : Promise<void>
+  }
+  note bottom of AlertsEvaluate
+    Runs all 12 PRD Section 17 rules
+    (CTR drop, CPL spike, budget
+    exhausted, stopped unexpectedly,
+    learning limited, frequency high,
+    ROAS dropped, spend anomaly,
+    lead volume dropped, pixel
+    inactive, sync/API failure).
+    Deduped: skips insert if the same
+    rule_key is already open for
+    that campaign.
+  end note
+}
+
+package "lib/analytics" {
+  class "estimatedRoi.ts" as EstimatedRoiModule <<module>> {
+    +computeEstimatedRevenue(leads,\n  assumedConversionRatePct,\n  assumedAvgDealValue) : number | null
+    +computeEstimatedRoiPct(spend,\n  estimatedRevenue) : number | null
+  }
+
+  class LeaderboardRow <<type>> {
+    key : string
+    name : string
+    spend : number
+    leads : number
+    cpl : number | null
+  }
+
+  class "propertyRollup.ts / groupRollup.ts" as RollupModules <<module>> {
+    +rollupByProperty(campaigns, metrics)\n  : LeaderboardRow[]
+    +rollupByKey(campaigns, metrics)\n  : LeaderboardRow[]
+  }
+
+  RollupModules ..> LeaderboardRow : returns
+}
+
+package "lib/meta (Meta Graph API client)" {
+  class MetaInsightRow <<type>> {
+    campaign_id : string
+    date_start : string
+    spend? : string
+    impressions? : string
+    reach? : string
+    frequency? : string
+    cpm? : string
+    ctr? : string
+    unique_ctr? : string
+    cpc? : string
+    clicks? : string
+    actions? : {action_type, value}[]
+  }
+
+  class "client.ts" as MetaClient <<module>> {
+    +fetchCampaigns(adAccountId, token)
+    +fetchInsights(adAccountId, token,\n  since, until) : Promise<MetaInsightRow[]>
+    +extractLeadCount(actions) : number
+  }
+
+  class "sync.ts" as MetaSync <<module>> {
+    +syncAdAccount(admin, adAccount,\n  daysBack?) : Promise<SyncResult>
+  }
+
+  class SyncResult <<type>> {
+    adAccountId : string
+    status : "success" | "error"
+    campaignsSynced : number
+    metricsRowsSynced : number
+    error? : string
+  }
+
+  MetaClient ..> MetaInsightRow : returns
+  MetaSync ..> MetaClient : calls
+  MetaSync ..> AlertsEvaluate : calls (per account,\nafter upserting metrics)
+  MetaSync ..> ProfitabilityEvaluate : calls (per account,\nafter alerts)
+  MetaSync ..> SyncResult : returns
+}
+
+package "lib/dashboard" {
+  class DashboardMetricsEntry <<type>> {
+    totalSpend : number
+    totalImpressions : number
+    totalLeads : number
+    latestCtr : number | null
+    latestFrequency : number | null
+  }
+
+  class DashboardData <<type>> {
+    campaigns : CampaignForDashboard[]
+    metricsToday : Map<string, DashboardMetricsEntry>
+    metricsYesterday : Map<string, DashboardMetricsEntry>
+    metricsRange : Map<string, DashboardMetricsEntry>
+    rangeLabel : string
+    trend : WorkspaceTrendPoint[]
+    alerts : AlertPanelRow[]
+    properties : {id, name, assumedConversionRate,\n  assumedAvgDealValue}[]
+  }
+  note right of DashboardData
+    metricsToday/metricsYesterday are
+    ALWAYS fixed to today/yesterday
+    (PRD Section 9.1) regardless of
+    the dashboard's date-range picker;
+    only metricsRange follows it.
+  end note
+
+  class "data.ts" as DashboardDataModule <<module>> {
+    +loadDashboardData(supabase, workspaceId,\n  range) : Promise<DashboardData>
+    +sumMetrics(campaignIds, metrics)\n  : {spend, leads, impressions}
+    +propertyLeaderboard(data) : LeaderboardRow[]
+    +cityLeaderboard(data) : LeaderboardRow[]
+    +totalEstimatedRevenue(data) : number | null
+    +campaignsNeedingAttention(data) : {...}[]
+  }
+
+  DashboardDataModule ..> DashboardData : returns
+  DashboardDataModule ..> LeaderboardRow : returns
+  DashboardDataModule ..> EstimatedRoiModule : uses
+  DashboardDataModule ..> HealthModule : uses
+}
+
+package "components (UI-facing types)" {
+  class CampaignRow <<type>> {
+    id : string
+    name : string
+    status : string | null
+    adAccountName : string
+    propertyName : string | null
+    city : string | null
+    spend : number
+    impressions : number
+    leads : number
+    cpl : number | null
+    ctr : number | null
+    cpc : number | null
+    cpm : number | null
+    latestFrequency : number | null
+    health : HealthStatus
+    recommendation : ProfitabilityRecommendation | null
+  }
+  note bottom of CampaignRow
+    ctr/cpc/cpm are range-correct,
+    computed in SQL from raw summed
+    totals (campaign_metrics_summary
+    RPC) — NOT an average of Meta's
+    daily ratios. latestFrequency is
+    the latest day in range only;
+    reach isn't additive across days,
+    so a true period frequency can't
+    be derived from stored data.
+  end note
+
+  class "CampaignTable.tsx" as CampaignTableComponent <<module>> {
+    +CampaignTable({rows, properties})
+  }
+
+  CampaignTableComponent ..> CampaignRow : renders
+  CampaignRow ..> HealthStatus
+  CampaignRow ..> ProfitabilityRecommendation
+}
+
+@enduml

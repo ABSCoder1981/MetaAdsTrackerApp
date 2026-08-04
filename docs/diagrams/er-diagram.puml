@@ -1,0 +1,412 @@
+@startuml er-diagram
+'
+' Entity-Relationship diagram — Meta Ads Campaign Performance Tracker.
+' Reflects the schema as it actually exists after migrations 0001-0010
+' (supabase/migrations/), not the original PRD sketch — see
+' docs/DATA_MODEL.md Section 0 "Schema Evolution" for the divergence
+' history. Regenerate this file by hand whenever a migration changes
+' table shape; nothing here is auto-extracted from SQL.
+'
+' Render: VS Code "PlantUML" extension, plantuml.com/plantuml, or
+'   `plantuml er-diagram.puml` (needs a local Java + plantuml.jar).
+
+hide circle
+skinparam linetype ortho
+skinparam roundcorner 6
+skinparam class {
+  BackgroundColor #FEFEFE
+  BorderColor #8892a6
+  ArrowColor #2563EB
+  FontSize 12
+}
+skinparam title {
+  FontSize 18
+  FontStyle bold
+}
+
+title Meta Ads Campaign Performance Tracker — Entity-Relationship Diagram\n(current schema, migrations 0001-0010)
+
+' ===========================================================================
+' Identity, Auth & RBAC
+' ===========================================================================
+
+entity "auth.users" as auth_users <<external (Supabase Auth)>> {
+  * id : uuid <<PK>>
+  --
+  email : text
+}
+
+entity "workspace" as workspace {
+  * id : uuid <<PK>>
+  --
+  name : text
+  webhook_secret : uuid
+  alert_thresholds : jsonb
+  profitability_thresholds : jsonb
+  timezone : text
+  currency : text
+  created_at : timestamptz
+}
+
+entity "workspace_member" as workspace_member {
+  * workspace_id : uuid <<PK, FK>>
+  * user_id : uuid <<PK, FK>>
+  --
+  role_id : uuid <<FK>>
+}
+
+entity "role" as role {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK, nullable>>
+  name : text
+  is_system_template : boolean
+}
+note right of role
+  workspace_id = null means a
+  system template. 5 current
+  templates: CEO, Marketing
+  Director, Marketing Manager,
+  Data Analyst, Administrator.
+  (Supervisor / Campaign Executive
+  removed in migration 0007.)
+end note
+
+entity "permission" as permission {
+  * id : uuid <<PK>>
+  --
+  role_id : uuid <<FK>>
+  resource : text
+  action : text
+}
+
+' ===========================================================================
+' Meta Ad Structure
+' ===========================================================================
+
+entity "business_manager" as business_manager {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  meta_bm_id : text
+  system_user_token_secret_ref : text
+  created_at : timestamptz
+}
+
+entity "ad_account" as ad_account {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  business_manager_id : uuid <<FK>>
+  meta_ad_account_id : text
+  name : text
+  currency : text
+  last_synced_at : timestamptz
+  last_sync_status : text
+  last_sync_error : text
+}
+
+entity "property" as property {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  name : text
+  city : text
+  state : text
+  country : text
+  assumed_conversion_rate : numeric
+  assumed_avg_deal_value : numeric
+}
+
+entity "campaign" as campaign {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  ad_account_id : uuid <<FK>>
+  property_id : uuid <<FK, nullable>>
+  meta_campaign_id : text
+  name : text
+  objective : text
+  status : text
+  buying_type : text
+  city : text
+  tagging_source : text
+  daily_budget : numeric
+  lifetime_budget : numeric
+  budget_remaining : numeric
+  budget_synced_at : timestamptz
+  effective_status : text
+  created_at : timestamptz
+}
+note bottom of campaign
+  manager_id / executive_id existed
+  in v1 schema, dropped in migration
+  0007 (flat org model, PRD v4).
+  city is independent of property
+  (bulk-taggable, migration 0008),
+  not derived from it.
+end note
+
+entity "audience" as audience {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  definition : jsonb
+}
+
+entity "ad_set" as ad_set {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  campaign_id : uuid <<FK>>
+  audience_id : uuid <<FK, nullable>>
+  meta_ad_set_id : text
+  name : text
+}
+
+entity "creative" as creative {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  type : text
+  thumbnail_url : text
+  copy_text : text
+}
+
+entity "ad" as ad {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  ad_set_id : uuid <<FK>>
+  creative_id : uuid <<FK, nullable>>
+  meta_ad_id : text
+}
+
+entity "pixel" as pixel {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  ad_account_id : uuid <<FK>>
+  meta_pixel_id : text
+  last_event_at : timestamptz
+}
+
+' ===========================================================================
+' Leads & Customers
+' ===========================================================================
+
+entity "lead" as lead {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  campaign_id : uuid <<FK>>
+  property_id : uuid <<FK, nullable>>
+  pixel_id : uuid <<FK, nullable>>
+  source : text
+  quality_tag : text
+  created_at : timestamptz
+}
+
+entity "customer" as customer {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  crm_reference : text
+  deal_value : numeric
+  closed_at : timestamptz
+}
+
+' ===========================================================================
+' Performance Metrics
+' ===========================================================================
+
+entity "daily_metrics" as daily_metrics {
+  * workspace_id : uuid <<PK, FK>>
+  * campaign_id : uuid <<PK, FK>>
+  * date : date <<PK>>
+  --
+  spend : numeric
+  impressions : bigint
+  reach : bigint
+  frequency : numeric
+  cpm : numeric
+  ctr : numeric
+  unique_ctr : numeric
+  cpc : numeric
+  clicks : bigint
+  outbound_clicks : bigint
+  landing_page_views : bigint
+  video_views : bigint
+  hook_rate : numeric
+  leads : bigint
+  cpl : numeric
+  budget : numeric
+  budget_utilization_pct : numeric
+  delivery_status : text
+  estimated_roi : numeric
+}
+note right of daily_metrics
+  ctr/cpc/cpm/frequency are Meta's
+  own values, precomputed for that
+  single day. clicks (migration 0010)
+  is a raw summable total, added so
+  CTR/CPC can be computed correctly
+  over a date RANGE in SQL (see
+  campaign_metrics_summary()),
+  not by averaging daily ratios.
+end note
+
+entity "historical_metrics" as historical_metrics {
+  * workspace_id : uuid <<PK>>
+  * campaign_id : uuid <<PK>>
+  * date : date <<PK>>
+  --
+  (identical column set to\ndaily_metrics — archival copy)
+}
+
+' ===========================================================================
+' Profitability Advisor (PRD v4 Section 9.10)
+' ===========================================================================
+
+entity "profitability_snapshot" as profitability_snapshot {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  campaign_id : uuid <<FK>>
+  evaluated_at : timestamptz
+  spend_to_date : numeric
+  leads_to_date : bigint
+  cpl : numeric
+  estimated_revenue : numeric
+  estimated_profit_loss : numeric
+  classification : text
+  recommendation : text
+  reason : text
+  days_below_break_even : integer
+}
+note right of profitability_snapshot
+  classification: profitable |
+    break_even | loss_making
+  recommendation: continue | monitor
+    | reduce_budget | pause
+  One row per campaign per
+  evaluation run (end of each sync).
+end note
+
+' ===========================================================================
+' Alerts, Notifications, Sync & Audit
+' ===========================================================================
+
+entity "alert" as alert {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  campaign_id : uuid <<FK, nullable>>
+  ad_account_id : uuid <<FK, nullable>>
+  rule_key : text
+  severity : text
+  status : text
+  triggered_at : timestamptz
+  resolved_at : timestamptz
+  resolved_by : uuid <<FK>>
+  acknowledged_at : timestamptz
+  acknowledged_by : uuid <<FK>>
+}
+
+entity "notification" as notification {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  alert_id : uuid <<FK, nullable>>
+  report_id : uuid
+  user_id : uuid <<FK>>
+  channel : text
+  sent_at : timestamptz
+  read_at : timestamptz
+}
+
+entity "sync_log" as sync_log {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  ad_account_id : uuid <<FK>>
+  started_at : timestamptz
+  finished_at : timestamptz
+  status : text
+  error_message : text
+  campaigns_synced : integer
+  metrics_rows_synced : integer
+}
+
+entity "audit_log" as audit_log {
+  * id : uuid <<PK>>
+  --
+  workspace_id : uuid <<FK>>
+  user_id : uuid <<FK, nullable>>
+  action : text
+  details : jsonb
+  created_at : timestamptz
+}
+
+' ===========================================================================
+' Relationships
+' ===========================================================================
+
+auth_users ||--o{ workspace_member
+workspace ||--o{ workspace_member
+role ||--o{ workspace_member
+role ||--o{ permission
+workspace ||--o{ role : "workspace-owned\ncustom roles"
+
+workspace ||--o{ business_manager
+workspace ||--o{ ad_account
+business_manager ||--o{ ad_account
+workspace ||--o{ property
+workspace ||--o{ campaign
+ad_account ||--o{ campaign
+property |o..o{ campaign : "optional tag"
+
+workspace ||--o{ audience
+workspace ||--o{ ad_set
+campaign ||--o{ ad_set
+audience |o..o{ ad_set : "optional"
+
+workspace ||--o{ creative
+workspace ||--o{ ad
+ad_set ||--o{ ad
+creative |o..o{ ad : "optional"
+
+workspace ||--o{ pixel
+ad_account ||--o{ pixel
+
+workspace ||--o{ lead
+campaign ||--o{ lead
+property |o..o{ lead : "optional"
+pixel |o..o{ lead : "optional"
+
+workspace ||--o{ customer
+
+workspace ||--o{ daily_metrics
+campaign ||--o{ daily_metrics
+workspace ||--o{ historical_metrics
+campaign ||--o{ historical_metrics
+
+workspace ||--o{ profitability_snapshot
+campaign ||--o{ profitability_snapshot
+
+workspace ||--o{ alert
+campaign |o..o{ alert : "optional"
+ad_account |o..o{ alert : "optional"
+auth_users |o..o{ alert : "resolved_by /\nacknowledged_by"
+
+workspace ||--o{ notification
+alert |o..o{ notification : "optional"
+auth_users ||--o{ notification
+
+workspace ||--o{ sync_log
+ad_account ||--o{ sync_log
+
+workspace ||--o{ audit_log
+auth_users |o..o{ audit_log
+
+@enduml
