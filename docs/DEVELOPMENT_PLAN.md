@@ -466,3 +466,35 @@ The column header carries a tooltip saying so rather than presenting an approxim
 **Known gap:** historical `daily_metrics` rows synced before this change have `clicks = null`, so CTR/CPC show
 "—" for any date range that only includes pre-migration days, until the next sync re-pulls that window. This
 is the same "blank until next sync" tradeoff flagged before building it, not a bug discovered after the fact.
+
+## 16. Two-Role Model — Administrator / User (business-decided, post-launch)
+
+**What changed:** the RBAC model is collapsed from PRD v4.0's 5 personas (CEO, Marketing Director, Marketing
+Manager, Data Analyst, Administrator — Section 7.3-7.7, Section 21's matrix) down to just **Administrator** and
+**User**. This is a further deviation on top of Section 11's already-amended flat org model: the business
+decided the persona split added no real access-control value for this team — every non-admin member needs the
+same view-only access to the same workspace data, so a role-per-persona model was unused complexity, not a
+safeguard.
+
+**What was built:**
+- Migration `0011_two_role_model.sql`: inserts the `User` system role template; reassigns any
+  `workspace_member` row on a removed role (CEO / Marketing Director / Marketing Manager / Data Analyst) to
+  `User`; deletes those four role templates and their `permission` rows; re-seeds `permission` for just
+  Administrator (`view_all`, `edit`, `export`, `settings.manage`, `users.manage`) and User (`view_all`,
+  `export`).
+- `app/dashboard/page.tsx`: the `switch (context.roleName)` dispatch across `CeoDashboard` / `DirectorDashboard`
+  / `ManagerDashboard` / `AnalystDashboard` is gone — there's now a single `DashboardPage` component shown to
+  every workspace member. It keeps the union of what those four views showed (KPI row, trend chart,
+  spend-by-property donut, property/city leaderboards, campaigns-needing-attention, decision panel,
+  profitability panel, alert panel) rather than picking one persona's subset.
+- Removed the now-dead `ProfitabilitySnapshotWidget` component (was only reachable from the old `CeoDashboard`
+  branch).
+- `requireAdmin()` and every other `roleName === "Administrator"` gate (`app/dashboard/settings/actions.ts`,
+  `app/dashboard/profitability/actions.ts`, `app/dashboard/audit-log/page.tsx`,
+  `app/dashboard/profitability/page.tsx`) needed **no code change** — "Administrator" is unchanged, only the
+  other role names collapsed into "User".
+
+**What's deliberately NOT done:** no per-widget or per-page permission checks were added for the `User` role
+beyond what already existed — `User` is intentionally "everyone who isn't an Administrator," not a distinct
+permission tier with its own restrictions. If that's ever needed, it's a new deviation, not an extension of
+this one.

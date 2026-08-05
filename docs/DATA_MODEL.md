@@ -16,6 +16,8 @@ exact current columns.
 | `0002`–`0006` | Additive: Meta sync infra, campaign monitoring RPC, lead webhook, budget/alert columns, dashboard trend RPC. Don't change the entities described here. |
 | `0007_remove_manager_executive.sql` | **Removes** `sales_team_employee` entirely, and `campaign.manager_id`/`executive_id`. See `DEVELOPMENT_PLAN.md`'s Deviation Log. |
 | `0008_prd_v4_alignment.sql` | Adds `campaign.city` (independent tag, not derived from Property — PRD v4 Section 9.2), adds the **Profitability Snapshot** entity (`profitability_snapshot` table) and `workspace.profitability_thresholds`, restores the Marketing Manager RBAC role (full-workspace scope — `sales_team_employee` stays gone, this is just a `role` row). |
+| `0009_workspace_settings.sql`, `0010_daily_metrics_clicks.sql` | Additive: workspace settings, raw `daily_metrics.clicks` for range-correct CTR/CPC/CPM. Don't change the entities described here. |
+| `0011_two_role_model.sql` | **Collapses RBAC to 2 roles**: Administrator and User. Removes the CEO / Marketing Director / Marketing Manager / Data Analyst system role templates entirely (a further business decision beyond PRD v4.0's already-amended 5-persona model — see Deviation Log); any `workspace_member` on a removed role is reassigned to User. |
 
 ## 1. Entity List (from PRD Section 18.1, as amended by v4.0 — see §0)
 
@@ -64,7 +66,7 @@ create table workspace_member (
 create table role (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid references workspace(id), -- null = system-defined role template
-  name text not null -- CEO, Director, Manager, Supervisor, Executive, Analyst, Admin
+  name text not null -- current system templates (migration 0011): Administrator, User — see §0
 );
 
 create table permission (

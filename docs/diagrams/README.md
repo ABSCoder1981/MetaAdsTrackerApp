@@ -5,7 +5,7 @@ regenerate by hand whenever the underlying migration or module changes shape.
 
 | File | What it shows | Traces to |
 |---|---|---|
-| `er-diagram.puml` | Full database schema — every table, column, and FK as of migration `0010` | `supabase/migrations/*.sql` |
+| `er-diagram.puml` | Full database schema — every table, column, and FK as of migration `0011` | `supabase/migrations/*.sql` |
 | `sequence-meta-sync.puml` | The daily Meta Ads sync flow, one ad account, success + error paths | `app/api/cron/sync/route.ts`, `lib/meta/sync.ts` |
 | `class-domain-model.puml` | Application-layer types and the pure functions that operate on them (distinct from the DB shape — several fields here are computed at query time, never stored) | `lib/campaigns/`, `lib/profitability/`, `lib/alerts/`, `lib/meta/`, `lib/dashboard/`, `components/CampaignTable.tsx` |
 

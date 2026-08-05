@@ -1,11 +1,14 @@
 @startuml er-diagram
 '
 ' Entity-Relationship diagram — Meta Ads Campaign Performance Tracker.
-' Reflects the schema as it actually exists after migrations 0001-0010
+' Reflects the schema as it actually exists after migrations 0001-0011
 ' (supabase/migrations/), which implements PRD v4.0 — not the v1.0
 ' Section 18 DDL sketch, which still describes Sales Team/Employee and
 ' Manager/Executive tagging that v4.0 explicitly removed (Section 5.1's
-' flat org model). See docs/DATA_MODEL.md Section 0 "Schema Evolution"
+' flat org model). The role model itself has since diverged further
+' still: migration 0011 collapsed PRD v4.0's 5 personas down to just
+' Administrator/User, a business decision made after v4.0 shipped (see
+' Deviation Log). See docs/DATA_MODEL.md Section 0 "Schema Evolution"
 ' for the full divergence history and docs/DEVELOPMENT_PLAN.md's
 ' Deviation Log for why. PRD section numbers are cited per entity group
 ' below so this stays traceable to the spec, not just the SQL.
@@ -29,11 +32,11 @@ skinparam title {
   FontStyle bold
 }
 
-title Meta Ads Campaign Performance Tracker — Entity-Relationship Diagram\n(current schema, migrations 0001-0010)
+title Meta Ads Campaign Performance Tracker — Entity-Relationship Diagram\n(current schema, migrations 0001-0011)
 
 ' ===========================================================================
-' Identity, Auth & RBAC — PRD Section 21 (RBAC matrix), Section 9.16
-' (workspace switcher / multi-tenancy), Section 7.3-7.7 (the 5 personas)
+' Identity, Auth & RBAC — PRD Section 21 (RBAC matrix, superseded — see
+' migration 0011), Section 9.16 (workspace switcher / multi-tenancy)
 ' ===========================================================================
 
 entity "auth.users" as auth_users <<external (Supabase Auth)>> {
@@ -70,16 +73,21 @@ entity "role" as role {
 }
 note right of role
   workspace_id = null means a
-  system template. 5 current
-  templates match PRD v4.0
-  Section 7.3-7.7 exactly: CEO,
-  Marketing Director, Marketing
-  Manager, Data Analyst,
-  Administrator. (Supervisor /
-  Campaign Executive were PRD
-  v1.0 Sections 7.4-7.5 personas,
-  removed in migration 0007 —
-  see Deviation Log.)
+  system template. Only 2 current
+  templates: Administrator and
+  User (migration 0011) — a
+  deliberate business decision to
+  flatten PRD v4.0's 5-persona
+  model (CEO, Marketing Director,
+  Marketing Manager, Data Analyst,
+  Administrator; Section 7.3-7.7),
+  since non-admin members all
+  need the same view-only access.
+  (Supervisor / Campaign Executive
+  were PRD v1.0 Sections 7.4-7.5
+  personas, removed earlier still
+  in migration 0007 — see
+  Deviation Log.)
 end note
 
 entity "permission" as permission {

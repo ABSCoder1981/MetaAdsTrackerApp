@@ -14,7 +14,7 @@ export type LatestProfitabilitySnapshot = {
 };
 
 /** Latest evaluation snapshot per campaign across the whole workspace —
- * shared by the CEO/Director/Manager dashboard widgets and the dedicated
+ * shared by the dashboard's profitability widgets and the dedicated
  * Profitability & Recommendation view (Section 12). */
 export async function getLatestProfitabilitySnapshots(
   supabase: SupabaseClient,
