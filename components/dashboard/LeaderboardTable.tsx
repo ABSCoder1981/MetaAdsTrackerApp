@@ -6,10 +6,9 @@ export type LeaderboardRow = {
   cpl: number | null;
 };
 
-/** Generic leaderboard (Section 11.2: Property/City leaderboards — same
- * shape, different grouping dimension upstream). Ranked-list style per the
- * confirmed dashboard design (managers compare numbers faster than a
- * donut chart). */
+/** Generic leaderboard (Section 11.2: City leaderboard — grouping dimension
+ * supplied upstream). Ranked-list style per the confirmed dashboard design
+ * (managers compare numbers faster than a donut chart). */
 export function LeaderboardTable({ title, rows, limit = 5 }: { title: string; rows: LeaderboardRow[]; limit?: number }) {
   const top = [...rows].sort((a, b) => b.spend - a.spend).slice(0, limit);
 

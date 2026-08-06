@@ -9,14 +9,12 @@ const NAV_SECTIONS = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: "▦" },
       { href: "/dashboard/campaigns", label: "Campaigns", icon: "▤" },
-      { href: "/dashboard/properties", label: "Properties", icon: "⌂" },
       { href: "/dashboard/leads", label: "Leads", icon: "◎" },
     ],
   },
   {
     label: "Insights",
     items: [
-      { href: "/dashboard/profitability", label: "Profitability", icon: "△" },
       { href: "/dashboard/alerts", label: "Alerts", icon: "▲" },
       { href: "/dashboard/ad-accounts", label: "Ad Accounts", icon: "⇄" },
     ],

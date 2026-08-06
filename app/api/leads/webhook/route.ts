@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  let body: { meta_campaign_id?: string; campaign_name?: string; property_name?: string };
+  let body: { meta_campaign_id?: string; campaign_name?: string };
   try {
     body = await request.json();
   } catch {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "meta_campaign_id or campaign_name is required" }, { status: 400 });
   }
 
-  let campaignQuery = admin.from("campaign").select("id, property_id").eq("workspace_id", workspace.id);
+  let campaignQuery = admin.from("campaign").select("id").eq("workspace_id", workspace.id);
   campaignQuery = body.meta_campaign_id
     ? campaignQuery.eq("meta_campaign_id", body.meta_campaign_id)
     : campaignQuery.ilike("name", body.campaign_name!);
@@ -42,33 +42,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Campaign not found for this workspace" }, { status: 404 });
   }
 
-  let propertyId = campaign.property_id;
-  if (!propertyId && body.property_name) {
-    const { data: existingProperty } = await admin
-      .from("property")
-      .select("id")
-      .eq("workspace_id", workspace.id)
-      .ilike("name", body.property_name)
-      .maybeSingle();
-
-    propertyId =
-      existingProperty?.id ??
-      (
-        await admin
-          .from("property")
-          .insert({ workspace_id: workspace.id, name: body.property_name })
-          .select("id")
-          .single()
-      ).data?.id ??
-      null;
-  }
-
   const { data: lead, error } = await admin
     .from("lead")
     .insert({
       workspace_id: workspace.id,
       campaign_id: campaign.id,
-      property_id: propertyId,
       source: "landing_page_webhook",
     })
     .select("id")

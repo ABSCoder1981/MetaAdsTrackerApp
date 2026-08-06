@@ -55,48 +55,10 @@ package "lib/campaigns" {
   BudgetPacingModule ..> PacingStatus : returns
 }
 
-package "lib/profitability" {
-  class ProfitabilityClassification <<type>> {
-    "profitable" | "break_even" | "loss_making"
-  }
-
-  class ProfitabilityRecommendation <<type>> {
-    "continue" | "monitor" | "reduce_budget" | "pause"
-  }
-
-  class "rules.ts" as ProfitabilityRules <<module>> {
-    +DEFAULT_PROFITABILITY_THRESHOLDS : {\n  breakEvenMarginPct,\n  consecutiveDayThreshold,\n  minSpendForEligibility }
-    +classifyProfitability(profitLoss, spend,\n  breakEvenMarginPct) : ProfitabilityClassification
-    +computeDaysBelowBreakEven(prevDays,\n  isLossMakingToday) : number
-    +computeRecommendation(classification,\n  daysBelowBreakEven, threshold)\n  : ProfitabilityRecommendation
-    +buildProfitabilityReason(input) : string
-  }
-
-  class LatestProfitabilitySnapshot <<type>> {
-    campaignId : string
-    campaignName : string
-    classification : ProfitabilityClassification
-    recommendation : ProfitabilityRecommendation
-    reason : string
-    spendToDate : number
-    estimatedProfitLoss : number
-    daysBelowBreakEven : number
-    evaluatedAt : string
-  }
-
-  class "evaluate.ts" as ProfitabilityEvaluate <<module>> {
-    +evaluateAndStoreProfitability(admin,\n  workspaceId, campaigns) : Promise<void>
-  }
-
-  class "query.ts" as ProfitabilityQuery <<module>> {
-    +getLatestProfitabilitySnapshots(supabase,\n  workspaceId) : Promise<LatestProfitabilitySnapshot[]>
-  }
-
-  ProfitabilityRules ..> ProfitabilityClassification : returns
-  ProfitabilityRules ..> ProfitabilityRecommendation : returns
-  ProfitabilityEvaluate ..> ProfitabilityRules : uses
-  ProfitabilityQuery ..> LatestProfitabilitySnapshot : returns
-}
+' lib/profitability (Profitability Advisor) removed entirely in migration
+' 0012, along with lib/analytics/propertyRollup.ts and estimatedRoi.ts —
+' see docs/DEVELOPMENT_PLAN.md's Deviation Log. Its classification had no
+' meaning without Property's estimated-revenue assumptions.
 
 package "lib/alerts" {
   class "evaluate.ts" as AlertsEvaluate <<module>> {
@@ -117,11 +79,6 @@ package "lib/alerts" {
 }
 
 package "lib/analytics" {
-  class "estimatedRoi.ts" as EstimatedRoiModule <<module>> {
-    +computeEstimatedRevenue(leads,\n  assumedConversionRatePct,\n  assumedAvgDealValue) : number | null
-    +computeEstimatedRoiPct(spend,\n  estimatedRevenue) : number | null
-  }
-
   class LeaderboardRow <<type>> {
     key : string
     name : string
@@ -130,8 +87,7 @@ package "lib/analytics" {
     cpl : number | null
   }
 
-  class "propertyRollup.ts / groupRollup.ts" as RollupModules <<module>> {
-    +rollupByProperty(campaigns, metrics)\n  : LeaderboardRow[]
+  class "groupRollup.ts" as RollupModules <<module>> {
     +rollupByKey(campaigns, metrics)\n  : LeaderboardRow[]
   }
 
@@ -175,7 +131,6 @@ package "lib/meta (Meta Graph API client)" {
   MetaClient ..> MetaInsightRow : returns
   MetaSync ..> MetaClient : calls
   MetaSync ..> AlertsEvaluate : calls (per account,\nafter upserting metrics)
-  MetaSync ..> ProfitabilityEvaluate : calls (per account,\nafter alerts)
   MetaSync ..> SyncResult : returns
 }
 
@@ -196,7 +151,6 @@ package "lib/dashboard" {
     rangeLabel : string
     trend : WorkspaceTrendPoint[]
     alerts : AlertPanelRow[]
-    properties : {id, name, assumedConversionRate,\n  assumedAvgDealValue}[]
   }
   note right of DashboardData
     metricsToday/metricsYesterday are
@@ -209,15 +163,12 @@ package "lib/dashboard" {
   class "data.ts" as DashboardDataModule <<module>> {
     +loadDashboardData(supabase, workspaceId,\n  range) : Promise<DashboardData>
     +sumMetrics(campaignIds, metrics)\n  : {spend, leads, impressions}
-    +propertyLeaderboard(data) : LeaderboardRow[]
     +cityLeaderboard(data) : LeaderboardRow[]
-    +totalEstimatedRevenue(data) : number | null
     +campaignsNeedingAttention(data) : {...}[]
   }
 
   DashboardDataModule ..> DashboardData : returns
   DashboardDataModule ..> LeaderboardRow : returns
-  DashboardDataModule ..> EstimatedRoiModule : uses
   DashboardDataModule ..> HealthModule : uses
 }
 
@@ -227,7 +178,6 @@ package "components (UI-facing types)" {
     name : string
     status : string | null
     adAccountName : string
-    propertyName : string | null
     city : string | null
     spend : number
     impressions : number
@@ -238,7 +188,6 @@ package "components (UI-facing types)" {
     cpm : number | null
     latestFrequency : number | null
     health : HealthStatus
-    recommendation : ProfitabilityRecommendation | null
   }
   note bottom of CampaignRow
     ctr/cpc/cpm are range-correct,
@@ -253,12 +202,11 @@ package "components (UI-facing types)" {
   end note
 
   class "CampaignTable.tsx" as CampaignTableComponent <<module>> {
-    +CampaignTable({rows, properties})
+    +CampaignTable({rows})
   }
 
   CampaignTableComponent ..> CampaignRow : renders
   CampaignRow ..> HealthStatus
-  CampaignRow ..> ProfitabilityRecommendation
 }
 
 @enduml

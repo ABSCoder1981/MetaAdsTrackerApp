@@ -11,13 +11,6 @@ import {
   computeDaysUntilExhaustion,
   computePacingStatus,
 } from "@/lib/campaigns/budgetPacing";
-import {
-  CLASSIFICATION_LABEL,
-  RECOMMENDATION_LABEL,
-  RECOMMENDATION_CLASS,
-  type ProfitabilityClassification,
-  type ProfitabilityRecommendation,
-} from "@/lib/profitability/labels";
 
 function isoDaysAgo(n: number): string {
   const d = new Date();
@@ -36,7 +29,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   const { data: campaign } = await supabase
     .from("campaign")
     .select(
-      "id, name, status, objective, meta_campaign_id, ad_account_id, daily_budget, lifetime_budget, budget_remaining, ad_account(name, meta_ad_account_id, business_manager_id), property(name)"
+      "id, name, status, objective, meta_campaign_id, ad_account_id, daily_budget, lifetime_budget, budget_remaining, ad_account(name, meta_ad_account_id, business_manager_id)"
     )
     .eq("id", id)
     .single();
@@ -44,7 +37,6 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   if (!campaign) notFound();
 
   const adAccount = Array.isArray(campaign.ad_account) ? campaign.ad_account[0] : campaign.ad_account;
-  const property = Array.isArray(campaign.property) ? campaign.property[0] : campaign.property;
 
   const since = isoDaysAgo(29);
   const { data: metricsRows } = await supabase
@@ -105,15 +97,6 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     behind: "text-warn",
   };
 
-  // Profitability Advisor (Section 9.10) — latest evaluation snapshot.
-  const { data: latestProfitability } = await supabase
-    .from("profitability_snapshot")
-    .select("spend_to_date, leads_to_date, cpl, estimated_revenue, estimated_profit_loss, classification, recommendation, reason, days_below_break_even, evaluated_at")
-    .eq("campaign_id", id)
-    .order("evaluated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   // Live ad set / ad / creative drill-down — fetched fresh on each view, not
   // stored, since it's structural detail for one campaign rather than a
   // daily-sync-scale rollup (docs/DEVELOPMENT_PLAN.md Sprint 3 notes).
@@ -149,8 +132,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       </Link>
       <h1 className="mb-1 mt-2 text-2xl font-bold">{campaign.name}</h1>
       <p className="mb-6 text-sm text-muted">
-        {(adAccount as { name?: string } | null)?.name ?? "—"} · {campaign.status ?? "—"} · {campaign.objective ?? "—"} ·
-        Property: {(property as { name?: string } | null)?.name ?? "unset"}
+        {(adAccount as { name?: string } | null)?.name ?? "—"} · {campaign.status ?? "—"} · {campaign.objective ?? "—"}
       </p>
 
       <h2 className="mb-2 text-lg font-bold">Trend (last 30 days)</h2>
@@ -196,53 +178,6 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           <div className="rounded-lg border border-border bg-surface p-3">
             <p className="text-[11px] text-muted">Pacing</p>
             <p className={`text-lg font-bold ${PACING_CLASS[pacingStatus]}`}>{PACING_LABEL[pacingStatus]}</p>
-          </div>
-        )}
-      </div>
-
-      <h2 className="mb-2 text-lg font-bold">Profitability & Recommendation</h2>
-      <div className="mb-8">
-        {!latestProfitability ? (
-          <p className="text-sm text-muted">
-            No verdict yet — needs a Property tag with assumed conversion rate / avg deal value configured (see
-            Properties page), plus enough spend to clear the workspace&rsquo;s minimum-spend eligibility threshold.
-          </p>
-        ) : (
-          <div className="rounded-lg border border-border bg-surface p-4">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="rounded bg-surface-raised px-2 py-1 text-xs font-medium">
-                {CLASSIFICATION_LABEL[latestProfitability.classification as ProfitabilityClassification]}
-              </span>
-              <span
-                className={`rounded px-2 py-1 text-xs font-bold ${RECOMMENDATION_CLASS[latestProfitability.recommendation as ProfitabilityRecommendation]}`}
-              >
-                {RECOMMENDATION_LABEL[latestProfitability.recommendation as ProfitabilityRecommendation]}
-              </span>
-              <span className="text-xs text-faint">
-                Evaluated {new Date(latestProfitability.evaluated_at).toLocaleString()}
-              </span>
-            </div>
-            <p className="mb-4 text-sm text-foreground">{latestProfitability.reason}</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div>
-                <p className="text-[11px] text-muted">Spend to date</p>
-                <p className="tabular-nums font-bold">{Number(latestProfitability.spend_to_date).toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-muted">Est. Revenue</p>
-                <p className="tabular-nums font-bold">{Number(latestProfitability.estimated_revenue).toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-muted">Est. Profit/Loss</p>
-                <p className={`tabular-nums font-bold ${Number(latestProfitability.estimated_profit_loss) >= 0 ? "text-good" : "text-bad"}`}>
-                  {Number(latestProfitability.estimated_profit_loss).toFixed(0)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] text-muted">Days below break-even</p>
-                <p className="tabular-nums font-bold">{latestProfitability.days_below_break_even}</p>
-              </div>
-            </div>
           </div>
         )}
       </div>

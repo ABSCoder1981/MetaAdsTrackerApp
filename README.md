@@ -92,6 +92,20 @@ naming-convention auto-parsing, City becomes an independent bulk-taggable tag, a
   `/dashboard/profitability` view, and a new `pause_recommended` alert rule. Thresholds (break-even margin,
   consecutive-day window, minimum spend for eligibility) are workspace-configurable by Administrators.
 
+✅ **Two-role RBAC model** — the 5-persona role model (CEO, Marketing Director, Marketing Manager, Data Analyst,
+Administrator) was collapsed to just **Administrator** and **User** (`supabase/migrations/0011_two_role_model.sql`),
+a business decision that non-admin members all need the same view-only access. The role-branched `/dashboard`
+(CEO/Director/Manager/Analyst variants) became a single unified dashboard shown to everyone.
+
+📝 **Property module — and the Profitability Advisor it fed — removed entirely**
+(`supabase/migrations/0012_remove_property.sql`), at the business's explicit request. Property tagging on
+campaigns/leads, the `/dashboard/properties` page, the Property Leaderboard/donut on the dashboard, and Estimated
+Revenue/ROI are all gone. The Profitability Advisor (Section 9.10, described above) went with it — its
+profitable/break-even/loss-making classification was defined entirely by Property's assumed-revenue math, so
+there was no coherent CPL-only version to keep. `campaign.city` (always an independent tag, never derived from
+Property) and everything else — CTR/CPC/CPM/Frequency, the alert rule engine, audit logging — are unaffected.
+See `docs/DEVELOPMENT_PLAN.md`'s Deviation Log for the full rationale.
+
 See [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) for the full build plan.
 
 ## Documents
@@ -188,4 +202,4 @@ Verification scripts:
 | `scripts/verify-sprint4-schema.mjs` | Confirms `workspace.webhook_secret` migrated correctly | service_role key |
 
 Run `npm test` for the unit test suite (vitest) — pure business logic like the health heuristic, budget pacing
-math, date-range math, ROI calculations, and the Profitability Advisor's classification/recommendation rules.
+math, and date-range math.

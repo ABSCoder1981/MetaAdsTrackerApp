@@ -1,7 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { rollupByProperty } from "@/lib/analytics/propertyRollup";
 import { rollupByKey } from "@/lib/analytics/groupRollup";
-import { computeEstimatedRevenue } from "@/lib/analytics/estimatedRoi";
 import { computeHealthStatus } from "@/lib/campaigns/health";
 import type { LeaderboardRow } from "@/components/dashboard/LeaderboardTable";
 import type { AlertPanelRow } from "@/components/dashboard/AlertPanel";
@@ -11,8 +9,6 @@ export type CampaignForDashboard = {
   id: string;
   status: string | null;
   adAccountName: string;
-  propertyId: string | null;
-  propertyName: string | null;
   city: string | null;
 };
 
@@ -29,8 +25,8 @@ export type DashboardData = {
   metricsToday: Map<string, DashboardMetricsEntry>;
   metricsYesterday: Map<string, DashboardMetricsEntry>;
   /** Metrics for whichever range the dashboard's date-range picker is set
-   * to (default Last 30 Days) — drives the trend chart, leaderboards,
-   * decision panel, and spend donut. Kept separate from metricsToday/
+   * to (default Last 30 Days) — drives the trend chart and leaderboards.
+   * Kept separate from metricsToday/
    * metricsYesterday, which stay fixed regardless of the picker (Section
    * 9.1's "Today vs Yesterday delta on headline KPIs" is a specific,
    * always-on requirement, not something a date filter should change). */
@@ -38,7 +34,6 @@ export type DashboardData = {
   rangeLabel: string;
   trend: WorkspaceTrendPoint[];
   alerts: AlertPanelRow[];
-  properties: { id: string; name: string; assumedConversionRate: number | null; assumedAvgDealValue: number | null }[];
 };
 
 function isoDaysAgo(n: number): string {
@@ -77,11 +72,10 @@ export async function loadDashboardData(
     { data: rangeRows },
     { data: trendRows },
     { data: alertRows },
-    { data: propertyRows },
   ] = await Promise.all([
     supabase
       .from("campaign")
-      .select("id, status, city, ad_account(name), property_id, property(name, city)")
+      .select("id, status, city, ad_account(name)")
       .eq("workspace_id", workspaceId),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: today, p_until: today }),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: yesterday, p_until: yesterday }),
@@ -94,26 +88,15 @@ export async function loadDashboardData(
       .in("status", ["open", "acknowledged"])
       .order("triggered_at", { ascending: false })
       .limit(20),
-    supabase
-      .from("property")
-      .select("id, name, assumed_conversion_rate, assumed_avg_deal_value")
-      .eq("workspace_id", workspaceId),
   ]);
 
   const campaigns: CampaignForDashboard[] = (campaignRows ?? []).map((c: Record<string, unknown>) => {
     const adAccount = Array.isArray(c.ad_account) ? c.ad_account[0] : c.ad_account;
-    const property = Array.isArray(c.property) ? c.property[0] : c.property;
     return {
       id: c.id as string,
       status: c.status as string | null,
       adAccountName: (adAccount as { name?: string } | null)?.name ?? "—",
-      propertyId: c.property_id as string | null,
-      propertyName: (property as { name?: string } | null)?.name ?? null,
-      // City is an independent campaign-level tag (PRD v4 Section 9.2), not
-      // derived from Property — but falls back to the property's city if
-      // the campaign wasn't explicitly city-tagged, so older/partially
-      // tagged data still rolls up somewhere useful.
-      city: (c.city as string | null) ?? (property as { city?: string } | null)?.city ?? null,
+      city: c.city as string | null,
     };
   });
 
@@ -141,41 +124,7 @@ export async function loadDashboardData(
       leads: Number(r.total_leads ?? 0),
     })),
     alerts,
-    properties: (propertyRows ?? []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      assumedConversionRate: p.assumed_conversion_rate,
-      assumedAvgDealValue: p.assumed_avg_deal_value,
-    })),
   };
-}
-
-/** Sums Estimated Revenue (Section 5.1) across every property with
- * assumptions configured — properties without them are simply excluded
- * from the total rather than treated as zero, so an incomplete rollout of
- * assumptions doesn't silently understate the workspace total. */
-export function totalEstimatedRevenue(data: DashboardData): number | null {
-  const rollup = propertyLeaderboardRaw(data);
-  const propertyById = new Map(data.properties.map((p) => [p.id, p]));
-
-  let total = 0;
-  let anyConfigured = false;
-  for (const r of rollup) {
-    const prop = propertyById.get(r.propertyId!);
-    const revenue = computeEstimatedRevenue(r.leads, prop?.assumedConversionRate ?? null, prop?.assumedAvgDealValue ?? null);
-    if (revenue != null) {
-      total += revenue;
-      anyConfigured = true;
-    }
-  }
-  return anyConfigured ? total : null;
-}
-
-function propertyLeaderboardRaw(data: DashboardData) {
-  return rollupByProperty(
-    data.campaigns.map((c) => ({ id: c.id, propertyId: c.propertyId })),
-    data.metricsRange
-  ).filter((r) => r.propertyId);
 }
 
 export function sumMetrics(campaignIds: string[], metrics: DashboardData["metricsToday"]) {
@@ -187,22 +136,6 @@ export function sumMetrics(campaignIds: string[], metrics: DashboardData["metric
     },
     { spend: 0, leads: 0, impressions: 0 }
   );
-}
-
-export function propertyLeaderboard(data: DashboardData): LeaderboardRow[] {
-  const propertyNameById = new Map(data.campaigns.filter((c) => c.propertyId).map((c) => [c.propertyId!, c.propertyName!]));
-  return rollupByProperty(
-    data.campaigns.map((c) => ({ id: c.id, propertyId: c.propertyId })),
-    data.metricsRange
-  )
-    .filter((r) => r.propertyId)
-    .map((r) => ({
-      key: r.propertyId!,
-      name: propertyNameById.get(r.propertyId!) ?? "Unknown",
-      spend: r.spend,
-      leads: r.leads,
-      cpl: r.cpl,
-    }));
 }
 
 export function cityLeaderboard(data: DashboardData): LeaderboardRow[] {
@@ -229,7 +162,7 @@ export function campaignsNeedingAttention(
         impressions: m?.totalImpressions ?? 0,
         leads: m?.totalLeads ?? 0,
       });
-      return { id: c.id, name: c.propertyName ?? c.adAccountName, adAccountName: c.adAccountName, health };
+      return { id: c.id, name: c.adAccountName, adAccountName: c.adAccountName, health };
     })
     .filter((c): c is { id: string; name: string; adAccountName: string; health: "amber" | "red" } => c.health === "amber" || c.health === "red");
 }

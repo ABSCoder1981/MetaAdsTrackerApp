@@ -8,9 +8,9 @@
  *     would mean syncing every ad set for every campaign daily (not just
  *     the on-demand Campaign Detail drill-down) — meaningful added API
  *     load or rate-limit risk, deferred.
- *   - Estimated ROAS dropped WoW: needs a stored daily estimated_roi
- *     history per campaign, not just the live Property Analytics
- *     computation — deferred until that's backfilled.
+ *   - Estimated ROAS dropped WoW: needed a stored daily estimated_roi
+ *     history per campaign — moot now that the Property module (and its
+ *     estimated-revenue computation) has been removed entirely.
  *   - Pixel inactive: needs pixel event ingestion (Meta CAPI/Pixel
  *     webhook), which isn't built at all yet.
  */

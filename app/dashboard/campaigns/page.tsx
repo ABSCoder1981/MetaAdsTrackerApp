@@ -5,7 +5,6 @@ import { resolveActiveWorkspaceId } from "@/lib/workspace";
 import { computeHealthStatus } from "@/lib/campaigns/health";
 import { resolveDateRange, RANGE_OPTIONS } from "@/lib/campaigns/dateRange";
 import { CampaignTable, type CampaignRow } from "@/components/CampaignTable";
-import { createProperty } from "./actions";
 
 const PAGE_SIZE = 50;
 
@@ -28,27 +27,16 @@ export default async function CampaignsPage({
   // zero-activity campaigns always landed on page 1 regardless of date range.
   let query = supabase
     .from("campaign")
-    .select("id, name, status, objective, city, ad_account(name), property(name)")
+    .select("id, name, status, objective, city, ad_account(name)")
     .eq("workspace_id", workspaceId ?? "");
 
   if (params.q) query = query.ilike("name", `%${params.q}%`);
   if (params.status) query = query.eq("status", params.status);
 
-  const [{ data: campaigns }, { data: metrics }, { data: properties }, { count: taggedCount }] = await Promise.all([
+  const [{ data: campaigns }, { data: metrics }] = await Promise.all([
     query,
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: since, p_until: until }),
-    supabase.from("property").select("id, name").eq("workspace_id", workspaceId ?? ""),
-    supabase
-      .from("campaign")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId ?? "")
-      .not("property_id", "is", null),
   ]);
-
-  const { count: totalCampaignCount } = await supabase
-    .from("campaign")
-    .select("id", { count: "exact", head: true })
-    .eq("workspace_id", workspaceId ?? "");
 
   const metricsByCampaign = new Map((metrics ?? []).map((m: Record<string, unknown>) => [m.campaign_id as string, m]));
 
@@ -70,7 +58,6 @@ export default async function CampaignsPage({
     const cpm = m?.computed_cpm != null ? Number(m.computed_cpm) : null;
 
     const adAccount = Array.isArray(c.ad_account) ? c.ad_account[0] : c.ad_account;
-    const property = Array.isArray(c.property) ? c.property[0] : c.property;
 
     return {
       id: c.id as string,
@@ -78,7 +65,6 @@ export default async function CampaignsPage({
       status: c.status as string | null,
       objective: c.objective as string | null,
       adAccountName: (adAccount as { name?: string } | null)?.name ?? "—",
-      propertyName: (property as { name?: string } | null)?.name ?? null,
       city: (c.city as string | null) ?? null,
       spend,
       impressions,
@@ -89,7 +75,6 @@ export default async function CampaignsPage({
       cpm,
       latestFrequency,
       health: computeHealthStatus({ status: c.status as string | null, ctr: latestCtr, frequency: latestFrequency, spend, impressions, leads }),
-      recommendation: null,
     };
   });
 
@@ -103,32 +88,10 @@ export default async function CampaignsPage({
   const from = (page - 1) * PAGE_SIZE;
   const rows = allRows.slice(from, from + PAGE_SIZE);
 
-  // Profitability Advisor (Section 9.10) verdicts — fetched only for the
-  // current page's campaigns, latest snapshot per campaign.
-  if (rows.length > 0) {
-    const { data: snapshots } = await supabase
-      .from("profitability_snapshot")
-      .select("campaign_id, recommendation, evaluated_at")
-      .in("campaign_id", rows.map((r) => r.id))
-      .order("evaluated_at", { ascending: false });
-    const latestByCampaign = new Map<string, string>();
-    for (const s of snapshots ?? []) {
-      if (!latestByCampaign.has(s.campaign_id)) latestByCampaign.set(s.campaign_id, s.recommendation);
-    }
-    for (const r of rows) {
-      r.recommendation = (latestByCampaign.get(r.id) as CampaignRow["recommendation"]) ?? null;
-    }
-  }
-
-  const completenessPct = totalCampaignCount ? Math.round(((taggedCount ?? 0) / totalCampaignCount) * 100) : 0;
-
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Campaigns</h1>
-        <span className="text-sm text-muted">
-          Tagging completeness: <strong className="text-foreground">{completenessPct}%</strong> ({taggedCount ?? 0}/{totalCampaignCount ?? 0})
-        </span>
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
@@ -164,7 +127,7 @@ export default async function CampaignsPage({
         <p className="mb-4 text-sm text-muted">No campaigns match this search/filter.</p>
       )}
 
-      <CampaignTable rows={rows} properties={properties ?? []} />
+      <CampaignTable rows={rows} />
 
       <div className="mt-4 flex items-center justify-between text-sm">
         <span className="text-muted">
@@ -189,17 +152,6 @@ export default async function CampaignsPage({
           )}
         </div>
       </div>
-
-      <details className="mt-8 rounded-lg border border-border bg-surface p-4">
-        <summary className="cursor-pointer text-sm font-medium">Add Property manually</summary>
-        <form action={createProperty} className="mt-3 max-w-sm space-y-2">
-          <input name="name" required placeholder="Property name" className="w-full rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground" />
-          <input name="city" placeholder="City (optional)" className="w-full rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground" />
-          <button type="submit" className="rounded-md bg-foreground px-3 py-1 text-sm text-background">
-            Add Property
-          </button>
-        </form>
-      </details>
     </div>
   );
 }

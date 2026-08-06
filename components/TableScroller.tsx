@@ -35,11 +35,10 @@ export function TableScroller({ children, className = "" }: { children: React.Re
   }, []);
 
   return (
-    // No overflow-hidden here — a table cell (e.g. CampaignTable's property
-    // popover) can position an absolutely-placed dropdown outside this box's
-    // bounds, and clipping it would break that UI. Rounded corners without
-    // overflow-hidden are fine visually since the table content itself is a
-    // plain rectangle.
+    // No overflow-hidden here — a table cell can position an absolutely-
+    // placed dropdown outside this box's bounds, and clipping it would break
+    // that UI. Rounded corners without overflow-hidden are fine visually
+    // since the table content itself is a plain rectangle.
     <div className={`relative rounded-lg border border-border bg-surface ${className}`}>
       <div ref={ref} className="overflow-x-auto rounded-lg">
         {children}

@@ -498,3 +498,41 @@ safeguard.
 beyond what already existed — `User` is intentionally "everyone who isn't an Administrator," not a distinct
 permission tier with its own restrictions. If that's ever needed, it's a new deviation, not an extension of
 this one.
+
+## 17. Property Module Removed (business-decided, post-launch)
+
+**What changed:** the Property entity — and, as a direct consequence, the Campaign Profitability & Continue/Pause
+Advisor (Section 12 above) — is removed from the app entirely. Property was PRD v4.0's "unit real estate
+leadership actually thinks in" (Section 9.5): a real-estate project that campaigns could be tagged to, carrying
+an assumed conversion rate and average deal value used to project Estimated Revenue/ROI. The business decided
+this rollup layer wasn't earning its keep and asked for it removed, without breaking anything that doesn't
+depend on it.
+
+**Why Profitability Advisor had to go too, not just get patched:** its `profitable` / `break_even` /
+`loss_making` classification is defined as `(estimatedRevenue - spend) / spend`, i.e. it has no meaning without
+an estimated-revenue number. With Property (and its assumed conversion rate / deal value) gone, there is no
+CPL-only equivalent of "profitable" — a lead's cost tells you nothing about whether it's worth more than it
+cost without an assumed value per lead. Keeping the Advisor around with fabricated math would have been worse
+than removing it.
+
+**What was removed:**
+- Migration `0012_remove_property.sql`: drops `profitability_snapshot`, `workspace.profitability_thresholds`,
+  `lead.property_id`, `campaign.property_id`, `campaign.tagging_source`, and the `property` table itself.
+- `/dashboard/properties` and `/dashboard/profitability` pages, and their `actions.ts` files, entirely.
+- `lib/analytics/propertyRollup.ts`, `lib/analytics/estimatedRoi.ts`, and the whole `lib/profitability/` module
+  (`evaluate.ts`, `query.ts`, `rules.ts`, `labels.ts`).
+- `components/EstimatedValue.tsx`, `components/dashboard/PropertySpendDonut.tsx`,
+  `components/dashboard/DecisionPanel.tsx`, `components/dashboard/ProfitabilityPanel.tsx`.
+- The Property tagging UI on the Campaigns table (property select, per-row untag popover, "Tagging completeness"
+  header stat, "Add Property manually" form) and the Property columns on the Leads page and Campaign Detail page.
+- `evaluateAndStoreProfitability()`'s call site in `lib/meta/sync.ts`, and the `pause_recommended` alert rule
+  label (existing `alert` rows with that `rule_key` are left as historical records; new ones just never fire).
+- `scripts/reset-property-tagging.mjs` (a one-off utility script for a feature that no longer exists).
+
+**What was deliberately kept, since it was never derived from Property:** `campaign.city` is an independent,
+bulk-taggable attribute (PRD v4 Section 9.2, migration 0008) — City tagging on the Campaigns table and the
+dashboard's City Leaderboard are untouched. CTR/CPC/CPM/Frequency (Section 15), the alert rule engine (Section
+17 of the PRD), audit logging, and the two-role RBAC model (Section 16 above) are all unaffected — none of them
+read from `property` or `profitability_snapshot`. Historical `audit_log` rows for `property_deleted` and
+`profitability_thresholds_updated` still render with a readable label on the Audit Log page even though those
+actions can no longer occur.

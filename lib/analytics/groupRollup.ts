@@ -9,12 +9,8 @@ export type GroupRollup<K> = {
 };
 
 /**
- * Generic version of lib/analytics/propertyRollup.ts's grouping logic, for
- * dashboard widgets that roll campaigns up by city, manager, or any other
- * dimension rather than just property. propertyRollup.ts is left as its own
- * (already-tested, already-shipped) module rather than rewritten on top of
- * this — this is for new call sites (Section 11.2's City/Manager
- * leaderboards), not a refactor of working code.
+ * Generic grouping/rollup logic for dashboard widgets that sum campaign
+ * metrics by an arbitrary key (Section 11.2's City leaderboard).
  */
 export function rollupByKey<K>(
   campaigns: { id: string; key: K }[],

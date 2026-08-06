@@ -19,23 +19,11 @@ async function getSessionAndWorkspace() {
   return { supabase, user, workspaceId };
 }
 
-export async function createProperty(formData: FormData) {
-  const { supabase, workspaceId } = await getSessionAndWorkspace();
-  const name = String(formData.get("name") ?? "").trim();
-  const city = String(formData.get("city") ?? "").trim() || null;
-  if (!name) throw new Error("Property name is required");
-
-  const { error } = await supabase.from("property").insert({ workspace_id: workspaceId, name, city });
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/dashboard/campaigns");
-}
-
 /**
  * Manual, in-app tagging only — PRD v4 Section 5.1 explicitly states the
  * system "will not attempt to auto-parse campaign names to extract
- * property, city, or any other attribute." Property and City are tagged
- * independently (Section 9.2), not derived from one another.
+ * property, city, or any other attribute." City is an independent
+ * campaign-level tag (Section 9.2).
  */
 export async function bulkTagCampaigns(formData: FormData) {
   const { supabase, workspaceId } = await getSessionAndWorkspace();
@@ -43,20 +31,12 @@ export async function bulkTagCampaigns(formData: FormData) {
   const campaignIds = formData.getAll("campaign_id").map(String);
   if (campaignIds.length === 0) throw new Error("No campaigns selected");
 
-  const propertyIdRaw = String(formData.get("property_id") ?? "");
-  const clearProperty = propertyIdRaw === "__clear__";
-  const propertyId = clearProperty ? null : propertyIdRaw || null;
   const city = String(formData.get("city") ?? "").trim() || null;
-  if (!propertyId && !clearProperty && !city) throw new Error("Select a property or enter a city to apply");
-
-  const update: Record<string, string | null> = { tagging_source: "manual" };
-  if (propertyId) update.property_id = propertyId;
-  else if (clearProperty) update.property_id = null;
-  if (city) update.city = city;
+  if (!city) throw new Error("Enter a city to apply");
 
   const { error } = await supabase
     .from("campaign")
-    .update(update)
+    .update({ city })
     .eq("workspace_id", workspaceId)
     .in("id", campaignIds);
   if (error) throw new Error(error.message);

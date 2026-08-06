@@ -18,21 +18,22 @@ exact current columns.
 | `0008_prd_v4_alignment.sql` | Adds `campaign.city` (independent tag, not derived from Property — PRD v4 Section 9.2), adds the **Profitability Snapshot** entity (`profitability_snapshot` table) and `workspace.profitability_thresholds`, restores the Marketing Manager RBAC role (full-workspace scope — `sales_team_employee` stays gone, this is just a `role` row). |
 | `0009_workspace_settings.sql`, `0010_daily_metrics_clicks.sql` | Additive: workspace settings, raw `daily_metrics.clicks` for range-correct CTR/CPC/CPM. Don't change the entities described here. |
 | `0011_two_role_model.sql` | **Collapses RBAC to 2 roles**: Administrator and User. Removes the CEO / Marketing Director / Marketing Manager / Data Analyst system role templates entirely (a further business decision beyond PRD v4.0's already-amended 5-persona model — see Deviation Log); any `workspace_member` on a removed role is reassigned to User. |
+| `0012_remove_property.sql` | **Removes** the `property` table, `campaign.property_id`, `campaign.tagging_source`, `lead.property_id`, `profitability_snapshot`, and `workspace.profitability_thresholds` — the Property module and the Profitability Advisor it fed are both gone (business decision, further deviation beyond PRD v4.0 — see Deviation Log). `campaign.city` is untouched: it was never derived from Property. |
 
 ## 1. Entity List (from PRD Section 18.1, as amended by v4.0 — see §0)
 
-Workspace · Business Manager · Ad Account · Campaign · Ad Set · Ad · Creative · Audience · Pixel · Lead · Property ·
-~~Sales Team / Employee~~ (removed, §0) · **Profitability Snapshot** (added, PRD v4 Section 18.1) · Customer ·
-Daily Metrics · Historical Metrics · Alert · Notification · Audit Log · Role / Permission
+Workspace · Business Manager · Ad Account · Campaign · Ad Set · Ad · Creative · Audience · Pixel · Lead ·
+~~Sales Team / Employee~~ (removed, §0) · ~~Property~~ (removed, §0) · ~~Profitability Snapshot~~ (added in PRD v4
+Section 18.1, removed, §0) · Customer · Daily Metrics · Historical Metrics · Alert · Notification · Audit Log ·
+Role / Permission
 
 ## 2. Core Relationships (from PRD Section 18.2)
 
 ```
 Workspace 1—* Business Manager 1—* Ad Account 1—* Campaign 1—* Ad Set 1—* Ad *—1 Creative
-Campaign *—1 Property
-Campaign *—1 Manager/Supervisor/Executive (via Sales Team)
+Campaign *—1 Manager/Supervisor/Executive (via Sales Team) — removed, §0
 Campaign 1—* Daily Metrics (time-series fact table)
-Campaign 1—* Lead, Lead *—1 Property, Lead *—0..1 Customer (once CRM-linked)
+Campaign 1—* Lead, Lead *—0..1 Customer (once CRM-linked)
 Ad Account 1—* Pixel, Pixel 1—* Lead (landing-page-sourced leads)
 Campaign/Account 1—* Alert, Alert 1—* Notification, Notification *—1 User
 Workspace 1—* User, User *—1 Role, Role 1—* Permission
@@ -92,17 +93,6 @@ create table ad_account (
   currency text not null
 );
 
-create table property (
-  id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references workspace(id),
-  name text not null,
-  city text,
-  state text,
-  country text,
-  assumed_conversion_rate numeric, -- for Estimated ROI (Section 5.1)
-  assumed_avg_deal_value numeric
-);
-
 -- REMOVED in migration 0007 (§0) — kept struck through here rather than
 -- deleted from this doc, so the Deviation Log's history stays checkable.
 -- do not recreate without re-reading DEVELOPMENT_PLAN.md's Deviation Log.
@@ -116,12 +106,27 @@ create table property (
 --   reports_to uuid references sales_team_employee(id)
 -- );
 
+-- REMOVED in migration 0012 (§0), along with campaign.property_id/
+-- tagging_source and lead.property_id below — the Property module and the
+-- Profitability Advisor it fed were both removed (business decision).
+-- do not recreate without re-reading DEVELOPMENT_PLAN.md's Deviation Log.
+--
+-- create table property (
+--   id uuid primary key default gen_random_uuid(),
+--   workspace_id uuid not null references workspace(id),
+--   name text not null,
+--   city text,
+--   state text,
+--   country text,
+--   assumed_conversion_rate numeric, -- for Estimated ROI (Section 5.1)
+--   assumed_avg_deal_value numeric
+-- );
+
 -- v4.0 update: manager_id/executive_id removed (§0, migration 0007); city
--- added as its own tag, independent of property (§0, migration 0008) — PRD
--- v4 Section 9.2: "manually assign Property and City to campaigns... no
--- automatic parsing of campaign names," so tagging_source is now always
--- 'manual' in practice (the 'naming_convention' value is a historical
--- leftover from before the naming parser was deleted).
+-- added as its own tag (§0, migration 0008) — PRD v4 Section 9.2: "manually
+-- assign Property and City to campaigns... no automatic parsing of campaign
+-- names." property_id/tagging_source removed in migration 0012 (§0) along
+-- with the rest of the Property module.
 create table campaign (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references workspace(id),
@@ -131,9 +136,7 @@ create table campaign (
   objective text,
   status text,
   buying_type text,
-  property_id uuid references property(id),
   city text,
-  tagging_source text not null default 'manual', -- 'naming_convention' (legacy) | 'manual'
   created_at timestamptz not null default now()
 );
 
@@ -188,7 +191,6 @@ create table lead (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references workspace(id),
   campaign_id uuid not null references campaign(id),
-  property_id uuid references property(id),
   source text not null, -- 'meta_lead_form' | 'landing_page_webhook'
   pixel_id uuid references pixel(id), -- set only when source = landing_page_webhook
   quality_tag text, -- MVP: manual/CRM-synced tag; Phase 2: modeled score
@@ -226,25 +228,28 @@ create index idx_daily_metrics_hot_path on daily_metrics (workspace_id, campaign
 create table historical_metrics (like daily_metrics including all);
 
 -- Added in PRD v4.0 (§0, migration 0008) — Section 9.10's Profitability &
--- Continue/Pause Advisor. One row per campaign per evaluation run (run
--- once per ad account per sync, lib/profitability/evaluate.ts), so
--- days_below_break_even is a real consecutive-run counter derived from
--- prior rows, not a guess.
-create table profitability_snapshot (
-  id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references workspace(id),
-  campaign_id uuid not null references campaign(id),
-  evaluated_at timestamptz not null default now(),
-  spend_to_date numeric not null,
-  leads_to_date bigint not null,
-  cpl numeric,
-  estimated_revenue numeric,
-  estimated_profit_loss numeric,
-  classification text not null, -- 'profitable' | 'break_even' | 'loss_making'
-  recommendation text not null, -- 'continue' | 'monitor' | 'reduce_budget' | 'pause'
-  reason text not null,          -- templated, not AI-generated (PRD explicit requirement)
-  days_below_break_even integer not null default 0
-);
+-- Continue/Pause Advisor. REMOVED in migration 0012 (§0) along with the
+-- rest of the Property module, since its classification is defined
+-- entirely by estimated_revenue, which has no meaning without Property's
+-- assumed conversion rate / deal value. Kept struck through here rather
+-- than deleted, so the Deviation Log's history stays checkable.
+-- do not recreate without re-reading DEVELOPMENT_PLAN.md's Deviation Log.
+--
+-- create table profitability_snapshot (
+--   id uuid primary key default gen_random_uuid(),
+--   workspace_id uuid not null references workspace(id),
+--   campaign_id uuid not null references campaign(id),
+--   evaluated_at timestamptz not null default now(),
+--   spend_to_date numeric not null,
+--   leads_to_date bigint not null,
+--   cpl numeric,
+--   estimated_revenue numeric,
+--   estimated_profit_loss numeric,
+--   classification text not null, -- 'profitable' | 'break_even' | 'loss_making'
+--   recommendation text not null, -- 'continue' | 'monitor' | 'reduce_budget' | 'pause'
+--   reason text not null,          -- templated, not AI-generated (PRD explicit requirement)
+--   days_below_break_even integer not null default 0
+-- );
 
 create table alert (
   id uuid primary key default gen_random_uuid(),

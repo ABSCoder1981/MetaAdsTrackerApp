@@ -16,12 +16,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const [{ data: campaigns }, { data: metrics }, { data: individualLeads }, { data: workspaceRow }] = await Promise.all([
     supabase
       .from("campaign")
-      .select("id, name, property(name), property_id")
+      .select("id, name")
       .eq("workspace_id", workspaceId ?? ""),
     supabase.rpc("campaign_metrics_summary", { p_workspace_id: workspaceId, p_since: since, p_until: until }),
     supabase
       .from("lead")
-      .select("id, source, quality_tag, created_at, campaign(name), property(name)")
+      .select("id, source, quality_tag, created_at, campaign(name)")
       .eq("workspace_id", workspaceId ?? "")
       .order("created_at", { ascending: false })
       .limit(50),
@@ -40,11 +40,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const byCampaign = (campaigns ?? [])
     .map((c) => {
       const m = metricsByCampaign.get(c.id) as Record<string, unknown> | undefined;
-      const property = Array.isArray(c.property) ? c.property[0] : c.property;
       return {
         id: c.id,
         name: c.name,
-        propertyName: (property as { name?: string } | null)?.name ?? "Untagged",
         leads: Number(m?.total_leads ?? 0),
         spend: Number(m?.total_spend ?? 0),
         cpl: m?.computed_cpl != null ? Number(m.computed_cpl) : null,
@@ -88,7 +86,6 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">Campaign</th>
-              <th className="px-3 py-2">Property</th>
               <th className="px-3 py-2 text-right">Leads</th>
               <th className="px-3 py-2 text-right">Spend</th>
               <th className="px-3 py-2 text-right">CPL</th>
@@ -102,7 +99,6 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                     {c.name}
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-muted">{c.propertyName}</td>
                 <td className="tabular-nums px-3 py-2 text-right">{c.leads}</td>
                 <td className="tabular-nums px-3 py-2 text-right">{c.spend.toFixed(0)}</td>
                 <td className="tabular-nums px-3 py-2 text-right">{c.cpl?.toFixed(0) ?? "—"}</td>
@@ -110,7 +106,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             ))}
             {byCampaign.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-muted">
+                <td colSpan={4} className="px-3 py-4 text-center text-muted">
                   No leads recorded in this range yet.
                 </td>
               </tr>
@@ -122,7 +118,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       <h2 className="mb-2 text-lg font-bold">Individual Leads (CRM / Landing Page)</h2>
       <p className="mb-3 text-sm text-muted">
         Landing-page and CRM-sourced leads captured via a per-workspace webhook — see PRD Section 5.1 (dual
-        ingestion: Meta Lead Forms + landing-page leads). POST JSON <code className="rounded bg-surface-raised px-1">{`{ "meta_campaign_id" or "campaign_name", "property_name"? }`}</code> to:
+        ingestion: Meta Lead Forms + landing-page leads). POST JSON <code className="rounded bg-surface-raised px-1">{`{ "meta_campaign_id" or "campaign_name" }`}</code> to:
       </p>
       {webhookUrl && (
         <p className="mb-4 break-all rounded-lg border border-border bg-surface p-2 font-mono text-xs">
@@ -134,7 +130,6 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <thead className="text-[10px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2">Campaign</th>
-              <th className="px-3 py-2">Property</th>
               <th className="px-3 py-2">Source</th>
               <th className="px-3 py-2">Received</th>
               <th className="px-3 py-2">Quality</th>
@@ -143,11 +138,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <tbody>
             {(individualLeads ?? []).map((l: Record<string, unknown>) => {
               const campaign = Array.isArray(l.campaign) ? l.campaign[0] : l.campaign;
-              const property = Array.isArray(l.property) ? l.property[0] : l.property;
               return (
                 <tr key={l.id as string} className="border-t border-border">
                   <td className="px-3 py-2">{(campaign as { name?: string } | null)?.name ?? "—"}</td>
-                  <td className="px-3 py-2">{(property as { name?: string } | null)?.name ?? "—"}</td>
                   <td className="px-3 py-2">{l.source as string}</td>
                   <td className="tabular-nums px-3 py-2">{new Date(l.created_at as string).toLocaleString()}</td>
                   <td className="px-3 py-2">
@@ -158,7 +151,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             })}
             {(individualLeads ?? []).length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-muted">
+                <td colSpan={4} className="px-3 py-4 text-center text-muted">
                   No individual leads captured yet.
                 </td>
               </tr>

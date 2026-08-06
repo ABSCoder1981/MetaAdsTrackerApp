@@ -3,9 +3,11 @@
 ' UML Sequence diagram — daily Meta Ads sync, one ad account.
 ' Traces app/api/cron/sync/route.ts -> lib/meta/sync.ts:syncAdAccount()
 ' exactly (both the success path and the caught-error path), plus the
-' two evaluators it calls at the end (lib/alerts/evaluate.ts,
-' lib/profitability/evaluate.ts). Not a simplification — every DB call
-' and branch below has a corresponding line in the real code.
+' alert evaluator it calls at the end (lib/alerts/evaluate.ts). Not a
+' simplification — every DB call and branch below has a corresponding
+' line in the real code. (The sync flow previously also called
+' lib/profitability/evaluate.ts here — removed in migration 0012 along
+' with the rest of the Property module; see Deviation Log.)
 '
 ' Render: VS Code "PlantUML" extension, plantuml.com/plantuml, or
 '   `plantuml sequence-meta-sync.puml` (needs a local Java + plantuml.jar).
@@ -26,7 +28,6 @@ participant "syncAdAccount()" as Sync
 database "Supabase\n(service role)" as DB
 participant "Meta Graph API" as Meta
 participant "evaluateAndCreateAlerts()" as Alerts
-participant "evaluateAndStoreProfitability()" as Profitability
 
 Cron -> Route : GET, header\nAuthorization: Bearer $CRON_SECRET
 activate Route
@@ -63,7 +64,7 @@ else authorized
         Sync -> DB : upsert campaign\n(on conflict workspace_id+meta_campaign_id)
       end
 
-      Sync -> DB : select campaign (post-upsert,\nwith property_id)
+      Sync -> DB : select campaign (post-upsert)
 
       Sync -> Meta : GET /{ad_account}/insights\n(time_range: since..until,\ntime_increment=1, level=campaign)
       Meta --> Sync : daily insight rows\n(spend, impressions, reach, ctr,\ncpc, cpm, frequency, clicks, actions)
@@ -81,14 +82,6 @@ else authorized
       Alerts -> Alerts : run all 12 Section-17 rules\n(CTR drop, CPL spike, budget\nexhausted, stopped unexpectedly, ...)
       Alerts -> DB : insert alert rows\n(deduped: skip if same rule_key\nalready open for that campaign)
       deactivate Alerts
-
-      Sync -> Profitability : evaluateAndStoreProfitability(\n  admin, workspaceId, campaigns)
-      activate Profitability
-      Profitability -> DB : select property assumptions,\nprevious profitability_snapshot
-      Profitability -> Profitability : classify (profitable / break_even /\nloss_making) + recommend\n(continue / monitor / reduce_budget / pause)
-      Profitability -> DB : insert profitability_snapshot
-      Profitability -> DB : insert alert\n(rule_key='pause_recommended')\nif recommendation = pause
-      deactivate Profitability
 
       Sync -> DB : update ad_account\nlast_synced_at=now(), status='success'
       Sync -> DB : update sync_log\n(status='success', counts)

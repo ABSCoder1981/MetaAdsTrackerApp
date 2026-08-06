@@ -1,17 +1,20 @@
 @startuml er-diagram
 '
 ' Entity-Relationship diagram — Meta Ads Campaign Performance Tracker.
-' Reflects the schema as it actually exists after migrations 0001-0011
+' Reflects the schema as it actually exists after migrations 0001-0012
 ' (supabase/migrations/), which implements PRD v4.0 — not the v1.0
 ' Section 18 DDL sketch, which still describes Sales Team/Employee and
 ' Manager/Executive tagging that v4.0 explicitly removed (Section 5.1's
-' flat org model). The role model itself has since diverged further
-' still: migration 0011 collapsed PRD v4.0's 5 personas down to just
-' Administrator/User, a business decision made after v4.0 shipped (see
-' Deviation Log). See docs/DATA_MODEL.md Section 0 "Schema Evolution"
-' for the full divergence history and docs/DEVELOPMENT_PLAN.md's
-' Deviation Log for why. PRD section numbers are cited per entity group
-' below so this stays traceable to the spec, not just the SQL.
+' flat org model). The schema has since diverged further still, in two
+' business-decided steps beyond v4.0: migration 0011 collapsed the
+' 5-persona role model down to just Administrator/User, and migration
+' 0012 removed the Property module entirely — along with the
+' Profitability Advisor it fed, since that module's classification has
+' no meaning without Property's estimated-revenue assumptions. See
+' docs/DATA_MODEL.md Section 0 "Schema Evolution" for the full
+' divergence history and docs/DEVELOPMENT_PLAN.md's Deviation Log for
+' why. PRD section numbers are cited per entity group below so this
+' stays traceable to the spec, not just the SQL.
 ' Regenerate this file by hand whenever a migration changes table
 ' shape; nothing here is auto-extracted from SQL.
 '
@@ -32,7 +35,7 @@ skinparam title {
   FontStyle bold
 }
 
-title Meta Ads Campaign Performance Tracker — Entity-Relationship Diagram\n(current schema, migrations 0001-0011)
+title Meta Ads Campaign Performance Tracker — Entity-Relationship Diagram\n(current schema, migrations 0001-0012)
 
 ' ===========================================================================
 ' Identity, Auth & RBAC — PRD Section 21 (RBAC matrix, superseded — see
@@ -51,7 +54,6 @@ entity "workspace" as workspace {
   name : text
   webhook_secret : uuid
   alert_thresholds : jsonb
-  profitability_thresholds : jsonb
   timezone : text
   currency : text
   created_at : timestamptz
@@ -100,7 +102,8 @@ entity "permission" as permission {
 
 ' ===========================================================================
 ' Meta Ad Structure — PRD Section 9.14 (Meta API integration), Section
-' 9.2 (Campaign Monitoring), Section 9.5 (Property Analytics)
+' 9.2 (Campaign Monitoring). Section 9.5 (Property Analytics) no longer
+' applies — the Property entity was removed in migration 0012.
 ' ===========================================================================
 
 entity "business_manager" as business_manager {
@@ -125,31 +128,17 @@ entity "ad_account" as ad_account {
   last_sync_error : text
 }
 
-entity "property" as property {
-  * id : uuid <<PK>>
-  --
-  workspace_id : uuid <<FK>>
-  name : text
-  city : text
-  state : text
-  country : text
-  assumed_conversion_rate : numeric
-  assumed_avg_deal_value : numeric
-}
-
 entity "campaign" as campaign {
   * id : uuid <<PK>>
   --
   workspace_id : uuid <<FK>>
   ad_account_id : uuid <<FK>>
-  property_id : uuid <<FK, nullable>>
   meta_campaign_id : text
   name : text
   objective : text
   status : text
   buying_type : text
   city : text
-  tagging_source : text
   daily_budget : numeric
   lifetime_budget : numeric
   budget_remaining : numeric
@@ -165,9 +154,11 @@ note bottom of campaign
   is an independent bulk-taggable
   attribute per PRD v4.0 Section 9.2
   ("will not auto-parse campaign
-  names... City is tagged
-  independently of Property"), not
-  derived from property.city.
+  names"). property_id / tagging_source
+  existed here (Property was tagged
+  independently of city) until
+  migration 0012 removed the Property
+  module entirely.
 end note
 
 entity "audience" as audience {
@@ -224,7 +215,6 @@ entity "lead" as lead {
   --
   workspace_id : uuid <<FK>>
   campaign_id : uuid <<FK>>
-  property_id : uuid <<FK, nullable>>
   pixel_id : uuid <<FK, nullable>>
   source : text
   quality_tag : text
@@ -294,40 +284,12 @@ entity "historical_metrics" as historical_metrics {
 }
 
 ' ===========================================================================
-' Profitability Advisor (PRD v4 Section 9.10)
+' Profitability Advisor (PRD v4 Section 9.10) — REMOVED in migration 0012
+' along with the rest of the Property module: its profitable/break-even/
+' loss-making classification was defined entirely by estimated_revenue,
+' which has no meaning without Property's assumed conversion rate / deal
+' value. See docs/DEVELOPMENT_PLAN.md's Deviation Log.
 ' ===========================================================================
-
-entity "profitability_snapshot" as profitability_snapshot {
-  * id : uuid <<PK>>
-  --
-  workspace_id : uuid <<FK>>
-  campaign_id : uuid <<FK>>
-  evaluated_at : timestamptz
-  spend_to_date : numeric
-  leads_to_date : bigint
-  cpl : numeric
-  estimated_revenue : numeric
-  estimated_profit_loss : numeric
-  classification : text
-  recommendation : text
-  reason : text
-  days_below_break_even : integer
-}
-note right of profitability_snapshot
-  New in PRD v4.0 Section 9.10 (not
-  in v1.0 at all — v1.0's 9.10 was
-  Team & Employee Performance,
-  dropped with the flat org model).
-  classification: profitable |
-    break_even | loss_making
-  recommendation: continue | monitor
-    | reduce_budget | pause
-  One row per campaign per
-  evaluation run (end of each sync).
-  Deterministic, no AI/LLM call,
-  per Section 23's explicit
-  instruction.
-end note
 
 ' ===========================================================================
 ' Alerts, Notifications, Sync & Audit — PRD Section 17 (12 alert rules),
@@ -399,10 +361,8 @@ workspace ||--o{ role : "workspace-owned\ncustom roles"
 workspace ||--o{ business_manager
 workspace ||--o{ ad_account
 business_manager ||--o{ ad_account
-workspace ||--o{ property
 workspace ||--o{ campaign
 ad_account ||--o{ campaign
-property |o..o{ campaign : "optional tag"
 
 workspace ||--o{ audience
 workspace ||--o{ ad_set
@@ -419,7 +379,6 @@ ad_account ||--o{ pixel
 
 workspace ||--o{ lead
 campaign ||--o{ lead
-property |o..o{ lead : "optional"
 pixel |o..o{ lead : "optional"
 
 workspace ||--o{ customer
@@ -428,9 +387,6 @@ workspace ||--o{ daily_metrics
 campaign ||--o{ daily_metrics
 workspace ||--o{ historical_metrics
 campaign ||--o{ historical_metrics
-
-workspace ||--o{ profitability_snapshot
-campaign ||--o{ profitability_snapshot
 
 workspace ||--o{ alert
 campaign |o..o{ alert : "optional"
